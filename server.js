@@ -2,7 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
-const mineflayer = require('mineflayer');
+const { fork } = require('child_process');
 
 const app = express();
 const server = http.createServer(app);
@@ -40,13 +40,12 @@ class BotManager {
         const actualUsername = username || `Bot_${Math.floor(Math.random() * 1000)}`;
         const botId = `${actualUsername}-${host}-${Date.now()}`;
 
-        // In a real multi-node system, we would proxy this connection to the VPS
-        // For this panel implementation, we'll simulate the node assignment
-        const bot = mineflayer.createBot({
+        // Spawn bot as a separate process using bot.js
+        const child = fork(path.join(__dirname, 'bot.js'), [JSON.stringify({
             host: host || 'play.bananasmp.net',
             port: port || 25565,
-            username: actualUsername,
-        });
+            username: actualUsername
+        })]);
 
         const botData = {
             id: botId,
@@ -59,30 +58,30 @@ class BotManager {
             messages: []
         };
 
-        this.bots.set(botId, { bot, data: botData });
+        this.bots.set(botId, { child, data: botData });
 
-        bot.on('login', () => {
-            botData.status = 'online';
-            botData.username = bot.username;
-            io.emit('bot-status', botData);
+        child.on('message', (msg) => {
+            if (msg.type === 'status') {
+                botData.status = msg.status;
+                if (msg.username) botData.username = msg.username;
+                io.emit('bot-status', botData);
+            } else if (msg.type === 'chat') {
+                const chatMsg = {
+                    username: msg.username,
+                    message: msg.message,
+                    time: msg.time
+                };
+                botData.messages.push(chatMsg);
+                if (botData.messages.length > 100) botData.messages.shift();
+                io.emit('bot-chat', { botId, msg: chatMsg });
+            }
         });
 
-        bot.on('chat', (username, message) => {
-            const msg = { username, message, time: new Date().toLocaleTimeString() };
-            botData.messages.push(msg);
-            if (botData.messages.length > 100) botData.messages.shift();
-            io.emit('bot-chat', { botId, msg });
-        });
-
-        bot.on('error', (err) => {
-            botData.status = 'error';
-            io.emit('bot-status', botData);
-            console.error(`Bot ${username} error:`, err);
-        });
-
-        bot.on('end', () => {
-            botData.status = 'offline';
-            io.emit('bot-status', botData);
+        child.on('exit', () => {
+            if (this.bots.has(botId)) {
+                botData.status = 'offline';
+                io.emit('bot-status', botData);
+            }
         });
 
         return botData;
@@ -99,7 +98,7 @@ class BotManager {
     removeBot(botId) {
         const botInstance = this.bots.get(botId);
         if (botInstance) {
-            botInstance.bot.quit();
+            botInstance.child.kill();
             this.bots.delete(botId);
             return true;
         }
@@ -125,7 +124,7 @@ io.on('connection', (socket) => {
     socket.on('send-chat', ({ botId, message }) => {
         const botInstance = botManager.getBot(botId);
         if (botInstance && botInstance.data.status === 'online') {
-            botInstance.bot.chat(message);
+            botInstance.child.send({ type: 'send-chat', message });
         }
     });
 
