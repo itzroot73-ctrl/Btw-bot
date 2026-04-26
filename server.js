@@ -5,6 +5,9 @@ const path = require('path');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
+const cors = require('cors');
+const { spawn } = require('child_process');
+const ping = require('ping');
 require('dotenv').config();
 
 // Models & Middleware
@@ -18,6 +21,7 @@ const io = new Server(server, {
     cors: { origin: "*" }
 });
 
+app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -29,116 +33,209 @@ if (process.env.MONGODB_URI) {
     mongoose.connect(process.env.MONGODB_URI)
         .then(() => console.log('Connected to Nexus Database'))
         .catch(err => console.error('Database connection error:', err));
+} else {
+    console.warn('MONGODB_URI not found. Data will not persist.');
 }
 
-// --- AUTH ENDPOINTS ---
-app.post('/api/auth/login', (req, res) => {
-    const { password } = req.body;
-    if (password === (process.env.PANEL_PASSWORD || 'admin')) {
-        const token = jwt.sign({ role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
-        return res.json({ token });
+// --- API ENDPOINTS ---
+
+// Instance Management
+app.get('/api/instances', async (req, res) => {
+    try {
+        const instances = await Instance.find();
+        res.json(instances);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
     }
-    res.status(401).json({ error: 'Unauthorized' });
 });
 
-// --- NODE MANAGEMENT ---
-app.post('/api/nodes/register', auth, async (req, res) => {
+app.post('/api/instances', async (req, res) => {
+    try {
+        const instance = new Instance(req.body);
+        await instance.save();
+
+        // Spawn the bot
+        await deployInstance(instance);
+
+        res.status(201).json(instance);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.post('/api/instances/:id/restart', async (req, res) => {
+    try {
+        const instance = await Instance.findById(req.params.id);
+        if (!instance) return res.status(404).send();
+
+        await deployInstance(instance);
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.delete('/api/instances/:id', async (req, res) => {
+    try {
+        const instance = await Instance.findById(req.params.id);
+        if (!instance) return res.status(404).send();
+
+        // Signal termination
+        if (instance.nodeId === 'CORE_LOCAL') {
+            const proc = ACTIVE_LOCAL_PROCESSES.get(instance._id.toString());
+            if (proc) proc.kill();
+            ACTIVE_LOCAL_PROCESSES.delete(instance._id.toString());
+        } else {
+            const node = await Node.findOne({ identifier: instance.nodeId });
+            if (node) {
+                try {
+                    await axios.post(`http://${node.ip}:4000/kill`, { instanceId: instance._id });
+                } catch (e) {
+                    console.error(`Failed to kill on remote node ${node.identifier}`);
+                }
+            }
+        }
+
+        await Instance.deleteOne({ _id: req.params.id });
+        res.status(204).send();
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Node Management
+app.get('/api/nodes', async (req, res) => {
+    try {
+        const nodes = await Node.find();
+        res.json(nodes);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.post('/api/nodes', async (req, res) => {
     try {
         const node = new Node(req.body);
         await node.save();
-        io.emit('nodes-list', await Node.find());
-        res.json(node);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(201).json(node);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
     }
 });
 
-app.get('/api/nodes', auth, async (req, res) => {
-    const nodes = await Node.find();
-    res.json(nodes);
-});
-
-// --- DEPLOYMENT LOGIC (LOAD BALANCED) ---
-app.post('/api/instances/deploy', auth, async (req, res) => {
-    const { username, host, port, category } = req.body;
-
-    // Load Balancing: Find healthy node with least active instances
-    const targetNode = await Node.findOne({ status: 'online' }).sort({ activeInstances: 1 });
-
-    if (!targetNode) {
-        return res.status(503).json({ error: 'No active VPS nodes available' });
-    }
-
+app.delete('/api/nodes/:id', async (req, res) => {
     try {
-        // Create instance record
-        const instance = new Instance({
-            username,
-            host,
-            port: parseInt(port),
-            category,
-            nodeId: targetNode._id
-        });
-        await instance.save();
-
-        // Relay to VPS Listener
-        try {
-            await axios.post(`http://${targetNode.ip}:4000/deploy`, {
-                username, host, port, instanceId: instance._id
-            }, {
-                headers: { 'x-nexus-key': process.env.NODE_AUTH_KEY },
-                timeout: 5000
-            });
-
-            targetNode.activeInstances += 1;
-            await targetNode.save();
-
-            io.emit('bot-added', instance);
-            res.json({ status: 'deployed', instance, targetNode: targetNode.name });
-        } catch (relayErr) {
-            instance.status = 'error';
-            await instance.save();
-            throw new Error(`VPS Node Relay Failed: ${relayErr.message}`);
-        }
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+        await Node.deleteOne({ _id: req.params.id });
+        res.status(204).send();
+    } catch (e) {
+        res.status(500).json({ error: e.message });
     }
 });
 
-// --- REAL-TIME GATEWAY ---
-io.on('connection', (socket) => {
-    console.log('Neural Link established');
+// --- DEPLOYMENT LOGIC ---
 
-    // Socket handle for bot deployment from UI
-    socket.on('add-bot', async (data) => {
-        // Simple internal relay to deployment logic
-        // In full production, UI should use the REST API with JWT
-        console.log('UI Bot Deployment Request:', data.username);
-        // This is a bridge for the current visual panel UI
+const ACTIVE_LOCAL_PROCESSES = new Map();
+
+async function deployInstance(instance) {
+    if (instance.nodeId === 'CORE_LOCAL') {
+        spawnLocalBot(instance);
+    } else {
+        const node = await Node.findOne({ identifier: instance.nodeId });
+        if (node) {
+            try {
+                await axios.post(`http://${node.ip}:4000/spawn`, {
+                    username: instance.username,
+                    host: instance.host,
+                    port: instance.port,
+                    instanceId: instance._id,
+                    apiServer: process.env.PUBLIC_URL || `http://localhost:${PORT}`
+                });
+            } catch (e) {
+                console.error(`[CORE] Remote spawn failed for ${instance.username} on ${node.identifier}: ${e.message}`);
+                throw e;
+            }
+        } else {
+            throw new Error(`Node ${instance.nodeId} not found`);
+        }
+    }
+}
+
+function spawnLocalBot(instance) {
+    console.log(`[CORE] Spawning local unit: ${instance.username}`);
+
+    // Kill existing if any
+    const existing = ACTIVE_LOCAL_PROCESSES.get(instance._id.toString());
+    if (existing) existing.kill();
+
+    const botProcess = spawn('node', [
+        path.join(__dirname, 'bot.js'),
+        instance.username,
+        instance.host,
+        instance.port,
+        `http://localhost:${PORT}`,
+        instance._id
+    ], { stdio: 'inherit' });
+
+    ACTIVE_LOCAL_PROCESSES.set(instance._id.toString(), botProcess);
+
+    botProcess.on('exit', () => {
+        ACTIVE_LOCAL_PROCESSES.delete(instance._id.toString());
+        Instance.findByIdAndUpdate(instance._id, { status: 'offline' }).exec();
+        io.emit('bot-update', { instanceId: instance._id, type: 'status', data: 'offline' });
     });
+}
 
-    socket.on('authenticate', (token) => {
-        try {
-            jwt.verify(token, JWT_SECRET);
-            socket.authenticated = true;
-        } catch (e) {
-            socket.disconnect();
+// --- NODE HEALTH MONITORING ---
+
+async function monitorNodes() {
+    const nodes = await Node.find();
+    for (const node of nodes) {
+        const res = await ping.promise.probe(node.ip, { timeout: 2 });
+        const status = res.alive ? 'online' : 'offline';
+
+        if (node.status !== status) {
+            await Node.findByIdAndUpdate(node._id, { status, lastPing: new Date() });
+            io.emit('node-update', { identifier: node.identifier, status });
+        }
+    }
+}
+
+setInterval(monitorNodes, 30000); // Every 30 seconds
+
+// --- SOCKET LOGIC ---
+
+io.on('connection', (socket) => {
+    console.log('Gateway client connected:', socket.id);
+
+    socket.on('bot-event', (payload) => {
+        // Relay bot events (chat, logs, status, map) to web clients
+        io.emit('bot-update', payload);
+
+        // Update status in DB
+        if (payload.type === 'status') {
+            Instance.findByIdAndUpdate(payload.instanceId, { status: payload.data, lastSeen: new Date() }).exec();
         }
     });
 
-    // Remote bots connect back here to relay chat
-    socket.on('relay-chat', (data) => {
-        io.emit('bot-chat', data);
+    socket.on('send-chat', (payload) => {
+        // Forward chat command from web to bots
+        io.emit('send-chat', payload);
     });
 
-    socket.on('relay-status', (data) => {
-        io.emit('bot-status', data);
+    socket.on('request-map', (payload) => {
+        // Forward map request to bots
+        io.emit('request-map', payload);
     });
 
-    socket.on('relay-map', (data) => {
-        io.emit('bot-map', data);
+    socket.on('node-ping', async (payload) => {
+        // Handle direct pings from nodes if they use it
+        await Node.findOneAndUpdate({ identifier: payload.identifier }, { status: 'online', lastPing: new Date() }).exec();
     });
-
-    socket.on('disconnect', () => console.log('Neural Link terminated'));
 });
 
-server.listen(PORT, () => console.log(`Nexus Core active on port ${PORT}`));
+// Fallback for SPA
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+server.listen(PORT, () => console.log(`Nexus Core Gateway active on port ${PORT}`));
