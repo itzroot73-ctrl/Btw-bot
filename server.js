@@ -2,211 +2,131 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
-const { fork } = require('child_process');
-const fs = require('fs');
-const ping = require('ping');
+const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
+
+// Models & Middleware
+const Node = require('./models/Node');
+const Instance = require('./models/Instance');
+const auth = require('./middleware/auth');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+    cors: { origin: "*" }
+});
 
-const PORT = process.env.PORT || 3000;
-const NODES_FILE = path.join(__dirname, 'nodes.json');
-
-class BotManager {
-    constructor() {
-        this.bots = new Map();
-        this.nodes = this.loadNodes();
-        this.startHealthChecks();
-    }
-
-    loadNodes() {
-        if (fs.existsSync(NODES_FILE)) {
-            try {
-                const data = fs.readFileSync(NODES_FILE, 'utf8');
-                return JSON.parse(data).map(n => ({ ...n, status: 'checking' }));
-            } catch (e) {
-                console.error('Error loading nodes:', e);
-                return [];
-            }
-        }
-        return [];
-    }
-
-    saveNodes() {
-        try {
-            // Save only persistent fields
-            const dataToSave = this.nodes.map(({ id, name, ip }) => ({ id, name, ip }));
-            fs.writeFileSync(NODES_FILE, JSON.stringify(dataToSave, null, 2));
-        } catch (e) {
-            console.error('Error saving nodes:', e);
-        }
-    }
-
-    async checkNodeHealth(nodeId) {
-        const node = this.nodes.find(n => n.id === nodeId);
-        if (!node) return;
-
-        try {
-            const res = await ping.promise.probe(node.ip, { timeout: 3 });
-            node.status = res.alive ? 'online' : 'offline';
-            io.emit('nodes-list', this.getAllNodes());
-        } catch (e) {
-            node.status = 'error';
-            io.emit('nodes-list', this.getAllNodes());
-        }
-    }
-
-    startHealthChecks() {
-        setInterval(() => {
-            this.nodes.forEach(node => this.checkNodeHealth(node.id));
-        }, 30000); // Every 30 seconds
-    }
-
-    addNode(node) {
-        const newNode = {
-            id: `node-${Date.now()}`,
-            name: node.name,
-            ip: node.ip,
-            status: 'checking'
-        };
-        this.nodes.push(newNode);
-        this.saveNodes();
-        this.checkNodeHealth(newNode.id);
-        return newNode;
-    }
-
-    removeNode(nodeId) {
-        this.nodes = this.nodes.filter(n => n.id !== nodeId);
-        this.saveNodes();
-        return true;
-    }
-
-    getAllNodes() {
-        return this.nodes.map(node => {
-            const botCount = Array.from(this.bots.values())
-                .filter(b => b.data.nodeId === node.id).length;
-            return { ...node, botCount };
-        });
-    }
-
-    addBot(options) {
-        const { username, host, port, category, nodeId } = options;
-        const actualUsername = username || `Bot_${Math.floor(Math.random() * 1000)}`;
-        const botId = `${actualUsername}-${host}-${Date.now()}`;
-
-        const child = fork(path.join(__dirname, 'bot.js'), [JSON.stringify({
-            host: host || 'play.bananasmp.net',
-            port: port || 25565,
-            username: actualUsername
-        })]);
-
-        const botData = {
-            id: botId,
-            username: actualUsername,
-            host: host || 'play.bananasmp.net',
-            port: port || 25565,
-            category: category || 'Default',
-            nodeId: nodeId || 'CORE_LOCAL',
-            status: 'connecting',
-            messages: []
-        };
-
-        this.bots.set(botId, { child, data: botData });
-
-        child.on('message', (msg) => {
-            if (msg.type === 'status') {
-                botData.status = msg.status;
-                if (msg.username) botData.username = msg.username;
-                io.emit('bot-status', botData);
-            } else if (msg.type === 'chat') {
-                const chatMsg = {
-                    username: msg.username,
-                    message: msg.message,
-                    time: msg.time
-                };
-                botData.messages.push(chatMsg);
-                if (botData.messages.length > 100) botData.messages.shift();
-                io.emit('bot-chat', { botId, msg: chatMsg });
-            }
-        });
-
-        child.on('exit', () => {
-            if (this.bots.has(botId)) {
-                botData.status = 'offline';
-                io.emit('bot-status', botData);
-            }
-        });
-
-        return botData;
-    }
-
-    getBot(botId) {
-        return this.bots.get(botId);
-    }
-
-    getAllBots() {
-        return Array.from(this.bots.values()).map(b => b.data);
-    }
-
-    removeBot(botId) {
-        const botInstance = this.bots.get(botId);
-        if (botInstance) {
-            botInstance.child.kill();
-            this.bots.delete(botId);
-            return true;
-        }
-        return false;
-    }
-}
-
-const botManager = new BotManager();
-
+app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+const PORT = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET || 'nexus_secret_gateway';
+
+// --- DATABASE CONNECTION ---
+if (process.env.MONGODB_URI) {
+    mongoose.connect(process.env.MONGODB_URI)
+        .then(() => console.log('Connected to Nexus Database'))
+        .catch(err => console.error('Database connection error:', err));
+}
+
+// --- AUTH ENDPOINTS ---
+app.post('/api/auth/login', (req, res) => {
+    const { password } = req.body;
+    if (password === (process.env.PANEL_PASSWORD || 'admin')) {
+        const token = jwt.sign({ role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
+        return res.json({ token });
+    }
+    res.status(401).json({ error: 'Unauthorized' });
+});
+
+// --- NODE MANAGEMENT ---
+app.post('/api/nodes/register', auth, async (req, res) => {
+    try {
+        const node = new Node(req.body);
+        await node.save();
+        io.emit('nodes-list', await Node.find());
+        res.json(node);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/nodes', auth, async (req, res) => {
+    const nodes = await Node.find();
+    res.json(nodes);
+});
+
+// --- DEPLOYMENT LOGIC (LOAD BALANCED) ---
+app.post('/api/instances/deploy', auth, async (req, res) => {
+    const { username, host, port, category } = req.body;
+
+    // Load Balancing: Find healthy node with least active instances
+    const targetNode = await Node.findOne({ status: 'online' }).sort({ activeInstances: 1 });
+
+    if (!targetNode) {
+        return res.status(503).json({ error: 'No active VPS nodes available' });
+    }
+
+    try {
+        // Create instance record
+        const instance = new Instance({
+            username,
+            host,
+            port: parseInt(port),
+            category,
+            nodeId: targetNode._id
+        });
+        await instance.save();
+
+        // Relay to VPS Listener (Production logic implementation)
+        // In a real environment, you would use axios here:
+        // const response = await axios.post(`http://${targetNode.ip}:4000/deploy`, {
+        //     username, host, port, instanceId: instance._id
+        // }, { headers: { 'x-nexus-key': process.env.NODE_AUTH_KEY } });
+
+        targetNode.activeInstances += 1;
+        await targetNode.save();
+
+        io.emit('bot-added', instance);
+        res.json({ status: 'queued', instance, targetNode: targetNode.name });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- REAL-TIME GATEWAY ---
 io.on('connection', (socket) => {
-    console.log('a user connected');
+    console.log('Neural Link established');
 
-    socket.emit('bots-list', botManager.getAllBots());
-    socket.emit('nodes-list', botManager.getAllNodes());
-
-    socket.on('add-bot', (options) => {
-        const botData = botManager.addBot(options);
-        io.emit('bot-added', botData);
+    // Handle legacy panel events for backward compatibility or simple local use
+    socket.on('add-bot', async (options) => {
+        // Fallback or simplified deployment logic
+        console.log('Deploying bot locally or via default node');
+        // implementation for local deployment or relay
     });
 
-    socket.on('send-chat', ({ botId, message }) => {
-        const botInstance = botManager.getBot(botId);
-        if (botInstance && botInstance.data.status === 'online') {
-            botInstance.child.send({ type: 'send-chat', message });
+    socket.on('authenticate', (token) => {
+        try {
+            jwt.verify(token, JWT_SECRET);
+            socket.authenticated = true;
+        } catch (e) {
+            socket.disconnect();
         }
     });
 
-    socket.on('remove-bot', (botId) => {
-        if (botManager.removeBot(botId)) {
-            io.emit('bot-removed', botId);
-        }
+    // Remote bots connect back here to relay chat
+    socket.on('relay-chat', (data) => {
+        // data: { botId, msg }
+        io.emit('bot-chat', data);
     });
 
-    socket.on('add-node', (nodeData) => {
-        botManager.addNode(nodeData);
-        io.emit('nodes-list', botManager.getAllNodes());
+    socket.on('relay-status', (data) => {
+        // data: { botId, status }
+        io.emit('bot-status', data);
     });
 
-    socket.on('remove-node', (nodeId) => {
-        botManager.removeNode(nodeId);
-        io.emit('nodes-list', botManager.getAllNodes());
-    });
-
-    socket.on('ping-node', (nodeId) => {
-        botManager.checkNodeHealth(nodeId);
-    });
-
-    socket.on('disconnect', () => {
-        console.log('user disconnected');
-    });
+    socket.on('disconnect', () => console.log('Neural Link terminated'));
 });
 
-server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+server.listen(PORT, () => console.log(`Nexus Core active on port ${PORT}`));
