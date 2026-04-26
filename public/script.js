@@ -1,4 +1,5 @@
-const socket = io();
+// Initialize Socket.io
+let socket = io();
 
 // DOM Elements
 const botForm = document.getElementById('add-bot-form');
@@ -28,11 +29,40 @@ const nodesList = document.getElementById('nodes-list');
 const botNodeSelect = document.getElementById('bot-node');
 const activeInstancesCount = document.getElementById('active-instances-count');
 const registeredNodesCount = document.getElementById('registered-nodes-count');
+const apiEndpointInput = document.getElementById('api-endpoint');
+const saveEndpointBtn = document.getElementById('save-endpoint');
 
 let bots = [];
 let nodes = [];
 let selectedBotId = null;
 let currentCategory = 'ALL';
+
+// Load saved endpoint
+const savedEndpoint = localStorage.getItem('nexus-api-endpoint');
+if (savedEndpoint) {
+    apiEndpointInput.value = savedEndpoint;
+    connectToSocket(savedEndpoint);
+} else {
+    setupSocketHandlers();
+}
+
+function connectToSocket(url) {
+    if (socket) socket.disconnect();
+    socket = io(url);
+    setupSocketHandlers();
+}
+
+saveEndpointBtn.onclick = () => {
+    const url = apiEndpointInput.value.trim();
+    if (url) {
+        localStorage.setItem('nexus-api-endpoint', url);
+        connectToSocket(url);
+        alert('REMOTE CONNECTION ESTABLISHED');
+    } else {
+        localStorage.removeItem('nexus-api-endpoint');
+        location.reload();
+    }
+};
 
 // Modal Controls
 addBotTrigger.onclick = () => addBotModal.classList.remove('hidden');
@@ -68,61 +98,67 @@ addNodeForm.addEventListener('submit', (e) => {
     addNodeForm.reset();
 });
 
-// Socket Events
-socket.on('bots-list', (botList) => {
-    bots = botList;
-    updateCategoryFilters();
-    updateSidebar();
-    activeInstancesCount.textContent = bots.length;
-});
+// Socket Event Handlers Wrapper
+function setupSocketHandlers() {
+    socket.on('connect', () => {
+        console.log('connected to nexus core');
+    });
 
-socket.on('nodes-list', (nodeList) => {
-    nodes = nodeList;
-    updateNodesUI();
-    registeredNodesCount.textContent = nodes.length;
-});
-
-socket.on('bot-added', (bot) => {
-    bots.push(bot);
-    updateCategoryFilters();
-    updateSidebar();
-    activeInstancesCount.textContent = bots.length;
-});
-
-socket.on('bot-status', (updatedBot) => {
-    const index = bots.findIndex(b => b.id === updatedBot.id);
-    if (index !== -1) {
-        bots[index] = { ...bots[index], ...updatedBot };
+    socket.on('bots-list', (botList) => {
+        bots = botList;
+        updateCategoryFilters();
         updateSidebar();
-        if (selectedBotId === updatedBot.id) {
-            updateChatHeader();
-            updateChatControls();
-        }
-    }
-});
+        activeInstancesCount.textContent = bots.length;
+    });
 
-socket.on('bot-chat', ({ botId, msg }) => {
-    const bot = bots.find(b => b.id === botId);
-    if (bot) {
-        bot.messages.push(msg);
-        if (bot.messages.length > 100) bot.messages.shift();
+    socket.on('nodes-list', (nodeList) => {
+        nodes = nodeList;
+        updateNodesUI();
+        registeredNodesCount.textContent = nodes.length;
+    });
+
+    socket.on('bot-added', (bot) => {
+        bots.push(bot);
+        updateCategoryFilters();
+        updateSidebar();
+        activeInstancesCount.textContent = bots.length;
+    });
+
+    socket.on('bot-status', (updatedBot) => {
+        const index = bots.findIndex(b => b.id === updatedBot.id);
+        if (index !== -1) {
+            bots[index] = { ...bots[index], ...updatedBot };
+            updateSidebar();
+            if (selectedBotId === updatedBot.id) {
+                updateChatHeader();
+                updateChatControls();
+            }
+        }
+    });
+
+    socket.on('bot-chat', ({ botId, msg }) => {
+        const bot = bots.find(b => b.id === botId);
+        if (bot) {
+            bot.messages.push(msg);
+            if (bot.messages.length > 100) bot.messages.shift();
+            if (selectedBotId === botId) {
+                appendChatMessage(msg);
+            }
+        }
+    });
+
+    socket.on('bot-removed', (botId) => {
+        bots = bots.filter(b => b.id !== botId);
         if (selectedBotId === botId) {
-            appendChatMessage(msg);
+            selectedBotId = null;
+            chatContainer.classList.add('hidden', 'opacity-0');
+            noBotSelected.classList.remove('hidden', 'opacity-0');
         }
-    }
-});
-
-socket.on('bot-removed', (botId) => {
-    bots = bots.filter(b => b.id !== botId);
-    if (selectedBotId === botId) {
-        selectedBotId = null;
-        chatContainer.classList.add('hidden', 'opacity-0');
-        noBotSelected.classList.remove('hidden', 'opacity-0');
-    }
-    updateCategoryFilters();
-    updateSidebar();
-    activeInstancesCount.textContent = bots.length;
-});
+        updateCategoryFilters();
+        updateSidebar();
+        activeInstancesCount.textContent = bots.length;
+    });
+}
 
 // Rendering Functions
 function updateNodesUI() {
@@ -130,7 +166,6 @@ function updateNodesUI() {
     botNodeSelect.innerHTML = '<option value="CORE_LOCAL">CORE_LOCAL (DEFAULT)</option>';
 
     nodes.forEach(node => {
-        // Update Nodes List in Settings
         const div = document.createElement('div');
         div.className = 'bg-white/[0.01] border border-white/5 rounded-xl p-4 flex items-center justify-between';
 
@@ -154,7 +189,6 @@ function updateNodesUI() {
         div.appendChild(removeBtn);
         nodesList.appendChild(div);
 
-        // Update Select Dropdown
         const option = document.createElement('option');
         option.value = node.id;
         option.textContent = node.name;
