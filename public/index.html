@@ -13,6 +13,9 @@
 <body class="bg-[#000000] text-white overflow-hidden h-screen flex flex-col uppercase tracking-[0.15em] font-bold">
     <!-- Header -->
     <header class="h-20 border-b border-white/5 flex items-center justify-between px-8 z-10 bg-black">
+        <button id="menu-toggle" class="lg:hidden text-white/50 hover:text-white transition-all mr-4">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        </button>
         <div class="flex items-center space-x-5">
             <div class="w-10 h-10 bg-white rounded flex items-center justify-center font-black text-black text-xl">B</div>
             <div>
@@ -32,10 +35,11 @@
             </button>
         </div>
     </header>
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-40 hidden transition-opacity duration-300"></div>
 
     <div class="flex flex-1 overflow-hidden">
         <!-- Sidebar -->
-        <aside class="w-80 border-r border-white/5 flex flex-col bg-black">
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-80 transform -translate-x-full transition-transform duration-300 lg:relative lg:translate-x-0 border-r border-white/5 flex flex-col bg-black">
             <div class="p-6 pb-2">
                 <div class="flex items-center justify-between mb-8">
                     <div class="flex items-center space-x-2 text-white/30">
@@ -82,7 +86,7 @@
                             </h3>
 
                             <form id="add-node-form" class="space-y-6 mb-10">
-                                <div class="grid grid-cols-2 gap-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <input type="text" id="node-name" placeholder="NODE_IDENTIFIER" class="bg-white/[0.02] border border-white/5 rounded-xl px-5 py-3 outline-none focus:border-white/20 transition-all text-[9px]" required>
                                     <input type="text" id="node-ip" placeholder="VPS_IP_ADDRESS" class="bg-white/[0.02] border border-white/5 rounded-xl px-5 py-3 outline-none focus:border-white/20 transition-all text-[9px]" required>
                                 </div>
@@ -170,7 +174,7 @@
                 </button>
             </div>
             <form id="add-bot-form" class="space-y-8">
-                <div class="grid grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
                         <label class="block text-[8px] font-black tracking-[0.3em] text-white/20 mb-4">UNIT IDENTIFIER</label>
                         <input type="text" id="username" placeholder="CORE_NULL_01" class="w-full bg-white/[0.02] border border-white/5 rounded-xl px-5 py-4 outline-none focus:border-white/20 transition-all text-[10px]">
@@ -186,7 +190,7 @@
                         <option value="CORE_LOCAL">CORE_LOCAL (DEFAULT)</option>
                     </select>
                 </div>
-                <div class="grid grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
                     <div class="col-span-2">
                         <label class="block text-[8px] font-black tracking-[0.3em] text-white/20 mb-4">TARGET UPLINK</label>
                         <input type="text" id="host" placeholder="PLAY.BANANASMP.NET" class="w-full bg-white/[0.02] border border-white/5 rounded-xl px-5 py-4 outline-none focus:border-white/20 transition-all text-[10px]">

@@ -19,6 +19,12 @@ const botCount = document.getElementById('bot-count');
 const emptySidebar = document.getElementById('empty-sidebar');
 const categoryFilters = document.getElementById('category-filters');
 
+
+
+const menuToggle = document.getElementById('menu-toggle');
+const sidebarOverlay = document.getElementById('sidebar-overlay');
+const sidebar = document.getElementById('sidebar');
+
 // Settings Elements
 const settingsTrigger = document.getElementById('settings-trigger');
 const settingsView = document.getElementById('settings-view');
@@ -33,6 +39,27 @@ let bots = [];
 let nodes = [];
 let selectedBotId = null;
 let currentCategory = 'ALL';
+
+// Mobile Sidebar Controls
+if (menuToggle) {
+    menuToggle.onclick = () => {
+        sidebar.classList.toggle("open");
+        sidebarOverlay.classList.toggle("visible");
+        sidebarOverlay.classList.toggle("hidden");
+    };
+}
+
+if (sidebarOverlay) {
+    sidebarOverlay.onclick = closeSidebar;
+}
+
+function closeSidebar() {
+    if (window.innerWidth < 1024) {
+        sidebar.classList.remove("open");
+        sidebarOverlay.classList.add("hidden");
+        sidebarOverlay.classList.remove("visible");
+    }
+}
 
 // Modal Controls
 addBotTrigger.onclick = () => addBotModal.classList.remove('hidden');
@@ -73,6 +100,7 @@ socket.on('bots-list', (botList) => {
     bots = botList;
     updateCategoryFilters();
     updateSidebar();
+
     activeInstancesCount.textContent = bots.length;
 });
 
@@ -86,6 +114,7 @@ socket.on('bot-added', (bot) => {
     bots.push(bot);
     updateCategoryFilters();
     updateSidebar();
+
     activeInstancesCount.textContent = bots.length;
 });
 
@@ -94,6 +123,7 @@ socket.on('bot-status', (updatedBot) => {
     if (index !== -1) {
         bots[index] = { ...bots[index], ...updatedBot };
         updateSidebar();
+
         if (selectedBotId === updatedBot.id) {
             updateChatHeader();
             updateChatControls();
@@ -121,6 +151,7 @@ socket.on('bot-removed', (botId) => {
     }
     updateCategoryFilters();
     updateSidebar();
+
     activeInstancesCount.textContent = bots.length;
 });
 
@@ -173,6 +204,8 @@ function updateCategoryFilters() {
             currentCategory = cat;
             updateCategoryFilters();
             updateSidebar();
+            closeSidebar();
+
         };
         categoryFilters.appendChild(btn);
     });
@@ -251,6 +284,8 @@ function selectBot(botId) {
     updateChatHeader();
     updateChatControls();
     updateSidebar();
+    closeSidebar();
+
 }
 
 function updateChatHeader() {

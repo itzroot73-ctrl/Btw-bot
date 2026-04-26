@@ -55,3 +55,24 @@ body {
     color: white;
     border-bottom: 2px solid white;
 }
+
+/* Mobile Responsive Adjustments */
+#sidebar.open {
+    transform: translateX(0);
+}
+
+#sidebar-overlay.visible {
+    display: block;
+    opacity: 1;
+}
+
+@media (max-width: 1024px) {
+    #chat-container, #settings-view, #no-bot-selected {
+        padding: 1.5rem !important;
+    }
+
+    header {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+}
