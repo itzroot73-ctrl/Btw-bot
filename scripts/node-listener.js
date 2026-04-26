@@ -35,12 +35,12 @@ app.post('/deploy', secureNode, (req, res) => {
 
     pm2.start({
         name: `nexus-${instanceId}`,
-        script: path.join(__dirname, '..', 'bot.js'), // Corrected path to root
+        script: path.join(__dirname, '..', 'bot.js'),
         args: [JSON.stringify({ username, host, port, instanceId })],
         autorestart: true,
         max_restarts: 10,
         env: {
-            CORE_URL: process.env.CORE_URL // Remote core to report back to
+            CORE_URL: process.env.CORE_URL
         }
     }, (err, apps) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -53,6 +53,33 @@ app.post('/stop', secureNode, (req, res) => {
     pm2.delete(`nexus-${instanceId}`, (err) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ status: 'terminated' });
+    });
+});
+
+app.post('/update-settings', secureNode, (req, res) => {
+    const { instanceId, settings } = req.body;
+    pm2.sendDataToProcessId({
+        id: `nexus-${instanceId}`,
+        type: 'process:msg',
+        data: {
+            type: 'update-settings',
+            settings
+        },
+        topic: 'update-settings'
+    }, (err) => {
+        if (err) {
+            // Try alternative PM2 message method by finding PID
+            pm2.list((lErr, list) => {
+                const proc = list?.find(p => p.name === `nexus-${instanceId}`);
+                if (proc && proc.pm2_id !== undefined) {
+                    pm2.sendDataToProcessId(proc.pm2_id, {
+                        type: 'update-settings',
+                        settings
+                    }, (e2) => {});
+                }
+            });
+        }
+        res.json({ status: 'queued' });
     });
 });
 

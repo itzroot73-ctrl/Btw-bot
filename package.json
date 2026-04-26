@@ -29,6 +29,7 @@
     "mineflayer": "^4.37.0",
     "mongoose": "^9.5.0",
     "ping": "^1.0.0",
+    "playwright": "^1.59.1",
     "pm2": "^6.0.14",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3"

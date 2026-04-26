@@ -484,3 +484,74 @@ function sendMessage() {
         chatInput.value = '';
     }
 }
+
+// --- COMBAT SETTINGS LOGIC ---
+
+const combatModal = document.getElementById('combat-modal');
+const closeCombatModalBtn = document.getElementById('close-combat-modal');
+const kaEnabled = document.getElementById('ka-enabled');
+const kaRange = document.getElementById('ka-range');
+const kaRangeVal = document.getElementById('ka-range-val');
+const kaSpeed = document.getElementById('ka-speed');
+const kaSpeedVal = document.getElementById('ka-speed-val');
+
+function toggleCombatModal() {
+    if (!selectedBotId) return;
+
+    if (combatModal.classList.contains('hidden')) {
+        // Load current bot settings
+        const bot = bots.find(b => b.id === selectedBotId);
+        if (bot && bot.settings) {
+            kaEnabled.checked = bot.settings.killauraEnabled || false;
+            kaRange.value = bot.settings.killauraRange || 3.8;
+            kaRangeVal.innerHTML = `${kaRange.value}<span class="text-[10px] text-white/20 ml-1">M</span>`;
+            kaSpeed.value = bot.settings.killauraSpeed || 10;
+            kaSpeedVal.innerHTML = `${kaSpeed.value}<span class="text-[10px] text-white/20 ml-1">APS</span>`;
+        }
+
+        combatModal.classList.remove('hidden');
+        setTimeout(() => combatModal.classList.add('active'), 10);
+    } else {
+        combatModal.classList.remove('active');
+        setTimeout(() => combatModal.classList.add('hidden'), 500);
+    }
+}
+
+// Right Shift Keybind
+window.addEventListener('keydown', (e) => {
+    if (e.code === 'ShiftRight') {
+        e.preventDefault();
+        toggleCombatModal();
+    }
+});
+
+closeCombatModalBtn.onclick = toggleCombatModal;
+
+// Update UI and Emit Settings
+function updateBotCombatSettings() {
+    if (!selectedBotId) return;
+
+    const settings = {
+        killauraEnabled: kaEnabled.checked,
+        killauraRange: parseFloat(kaRange.value),
+        killauraSpeed: parseInt(kaSpeed.value)
+    };
+
+    kaRangeVal.innerHTML = `${settings.killauraRange}<span class="text-[10px] text-white/20 ml-1">M</span>`;
+    kaSpeedVal.innerHTML = `${settings.killauraSpeed}<span class="text-[10px] text-white/20 ml-1">APS</span>`;
+
+    socket.emit('update-bot-settings', { botId: selectedBotId, settings });
+}
+
+kaEnabled.onchange = updateBotCombatSettings;
+kaRange.oninput = updateBotCombatSettings;
+kaSpeed.oninput = updateBotCombatSettings;
+
+// Listen for updates from server
+socket.on('bot-settings-updated', (data) => {
+    const bot = bots.find(b => b.id === data.botId);
+    if (bot) {
+        bot.settings = data.settings;
+        // Optionally show a "Synced" toast or indicator
+    }
+});

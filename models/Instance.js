@@ -7,6 +7,11 @@ const instanceSchema = new mongoose.Schema({
     category: { type: String, default: 'NEURAL_GRID' },
     nodeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Node' },
     status: { type: String, enum: ['deploying', 'running', 'stopped', 'error'], default: 'deploying' },
+    settings: {
+        killauraEnabled: { type: Boolean, default: false },
+        killauraRange: { type: Number, default: 3.5 },
+        killauraSpeed: { type: Number, default: 10 } // APS
+    },
     pm2Id: { type: Number },
     createdAt: { type: Date, default: Date.now }
 });

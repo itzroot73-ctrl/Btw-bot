@@ -62,7 +62,6 @@ app.get('/api/nodes', auth, async (req, res) => {
 app.post('/api/instances/deploy', auth, async (req, res) => {
     const { username, host, port, category } = req.body;
 
-    // Load Balancing: Find healthy node with least active instances
     const targetNode = await Node.findOne({ status: 'online' }).sort({ activeInstances: 1 });
 
     if (!targetNode) {
@@ -70,7 +69,6 @@ app.post('/api/instances/deploy', auth, async (req, res) => {
     }
 
     try {
-        // Create instance record
         const instance = new Instance({
             username,
             host,
@@ -80,7 +78,6 @@ app.post('/api/instances/deploy', auth, async (req, res) => {
         });
         await instance.save();
 
-        // Relay to VPS Listener
         try {
             await axios.post(`http://${targetNode.ip}:4000/deploy`, {
                 username, host, port, instanceId: instance._id
@@ -108,14 +105,6 @@ app.post('/api/instances/deploy', auth, async (req, res) => {
 io.on('connection', (socket) => {
     console.log('Neural Link established');
 
-    // Socket handle for bot deployment from UI
-    socket.on('add-bot', async (data) => {
-        // Simple internal relay to deployment logic
-        // In full production, UI should use the REST API with JWT
-        console.log('UI Bot Deployment Request:', data.username);
-        // This is a bridge for the current visual panel UI
-    });
-
     socket.on('authenticate', (token) => {
         try {
             jwt.verify(token, JWT_SECRET);
@@ -125,7 +114,28 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Remote bots connect back here to relay chat
+    socket.on('update-bot-settings', async (data) => {
+        const { botId, settings } = data;
+        try {
+            const instance = await Instance.findByIdAndUpdate(botId, { settings }, { new: true }).populate('nodeId');
+            if (!instance) return;
+
+            if (instance.nodeId) {
+                await axios.post(`http://${instance.nodeId.ip}:4000/update-settings`, {
+                    instanceId: botId,
+                    settings
+                }, {
+                    headers: { 'x-nexus-key': process.env.NODE_AUTH_KEY },
+                    timeout: 2000
+                }).catch(e => console.log('VPS Update Relay Failed'));
+            }
+
+            io.emit('bot-settings-updated', { botId, settings });
+        } catch (err) {
+            console.error('Settings Update Error', err);
+        }
+    });
+
     socket.on('relay-chat', (data) => {
         io.emit('bot-chat', data);
     });
