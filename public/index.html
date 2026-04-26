@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft Bot Panel</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="background">
+        <div class="circle"></div>
+        <div class="circle"></div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>MC Bot Panel</h1>
+            <p>Manage your bots with ease</p>
+        </header>
+
+        <main>
+            <section class="glass card" id="bot-form-section">
+                <h2>Add New Bot</h2>
+                <form id="add-bot-form">
+                    <div class="form-group">
+                        <label for="username">Bot Name</label>
+                        <input type="text" id="username" placeholder="Bot_123">
+                    </div>
+                    <div class="form-group">
+                        <label for="host">Server IP</label>
+                        <input type="text" id="host" placeholder="play.bananasmp.net">
+                    </div>
+                    <div class="form-group">
+                        <label for="port">Port</label>
+                        <input type="number" id="port" placeholder="25565">
+                    </div>
+                    <div class="form-group">
+                        <label for="category">Category</label>
+                        <input type="text" id="category" placeholder="Lobby, Survival, etc.">
+                    </div>
+                    <button type="submit">Add Bot</button>
+                </form>
+            </section>
+
+            <section class="glass card" id="bots-list-section">
+                <h2>Active Bots</h2>
+                <div id="category-filters" class="filters">
+                    <button class="filter-btn active" data-category="all">All</button>
+                </div>
+                <div id="bots-grid" class="grid">
+                    <!-- Bots will be added here dynamically -->
+                </div>
+            </section>
+
+            <section class="glass card" id="chat-section">
+                <h2>Bot Chat</h2>
+                <div id="chat-window" class="chat-window">
+                    <p class="placeholder">Select a bot to view chat</p>
+                </div>
+                <div class="chat-input-container">
+                    <input type="text" id="chat-input" placeholder="Type a message..." disabled>
+                    <button id="send-chat-btn" disabled>Send</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
