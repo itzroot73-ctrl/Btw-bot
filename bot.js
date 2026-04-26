@@ -14,7 +14,16 @@ const bot = mineflayer.createBot({
     host: options.host || 'play.bananasmp.net',
     port: options.port || 25565,
     username: options.username,
+    version: options.version || false // Auto-detect
 });
+
+// --- KILL AURA STATE ---
+let killaura = {
+    enabled: false,
+    range: 3.8,
+    speed: 10, // APS
+    lastAttack: 0
+};
 
 function emitEvent(type, data) {
     if (process.send) {
@@ -50,15 +59,54 @@ bot.on('end', () => {
 
 // Capture Map Data
 bot.on('map', (data) => {
-    // Send only the essential color data buffer as an array
     if (data.colors) {
         emitEvent('map', { colors: Array.from(data.colors) });
     }
 });
 
-// Listen for messages from parent (e.g., to send chat)
+// --- COMBAT LOOP ---
+bot.on('physicsTick', () => {
+    if (!killaura.enabled) return;
+
+    const now = Date.now();
+    const attackDelay = 1000 / killaura.speed;
+
+    if (now - killaura.lastAttack < attackDelay) return;
+
+    const target = bot.nearestEntity((entity) => {
+        // Target players and hostiles
+        if (entity.type === 'player' && entity.username !== bot.username) return true;
+        if (entity.type === 'mob' || entity.type === 'hostile') return true;
+        return false;
+    });
+
+    if (target) {
+        const dist = bot.entity.position.distanceTo(target.position);
+        if (dist <= killaura.range) {
+            // Add a tiny jitter to look more "legit"
+            const jitter = Math.random() * 50;
+            if (now - killaura.lastAttack < attackDelay + jitter) return;
+
+            bot.lookAt(target.position.offset(0, target.height, 0));
+            bot.attack(target);
+            bot.swingArm();
+            killaura.lastAttack = now;
+        }
+    }
+});
+
+// Listen for messages from parent (e.g., to send chat or update settings)
 process.on('message', (msg) => {
     if (msg.type === 'send-chat' && bot) {
         bot.chat(msg.message);
+    }
+    if (msg.type === 'update-settings') {
+        if (msg.settings) {
+            killaura.enabled = msg.settings.killauraEnabled ?? killaura.enabled;
+            killaura.range = msg.settings.killauraRange ?? killaura.range;
+            killaura.speed = msg.settings.killauraSpeed ?? killaura.speed;
+
+            console.log(`[${bot.username}] SETTINGS_UPDATED: Killaura=${killaura.enabled} Range=${killaura.range} Speed=${killaura.speed}`);
+        }
     }
 });
