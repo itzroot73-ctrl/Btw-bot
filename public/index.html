@@ -23,9 +23,14 @@
                 </div>
             </div>
         </div>
-        <button id="add-bot-trigger" class="bg-white hover:bg-gray-200 text-black px-6 py-2 rounded-full text-[9px] font-black tracking-[0.1em] transition-all">
-            + NEW INSTANCE
-        </button>
+        <div class="flex items-center space-x-4">
+            <button id="settings-trigger" class="text-white/20 hover:text-white transition-all">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            </button>
+            <button id="add-bot-trigger" class="bg-white hover:bg-gray-200 text-black px-6 py-2 rounded-full text-[9px] font-black tracking-[0.1em] transition-all">
+                + NEW INSTANCE
+            </button>
+        </div>
     </header>
 
     <div class="flex flex-1 overflow-hidden">
@@ -59,6 +64,59 @@
         <main class="flex-1 flex flex-col relative">
             <!-- Background Grid -->
             <div class="absolute inset-0 grid-bg opacity-30 pointer-events-none"></div>
+
+            <!-- Settings View -->
+            <div id="settings-view" class="hidden absolute inset-0 bg-black/90 z-40 p-10 overflow-y-auto">
+                <div class="max-w-4xl mx-auto">
+                    <div class="flex items-center justify-between mb-12">
+                        <h2 class="text-2xl font-black tracking-[0.4em]">SYSTEM SETTINGS</h2>
+                        <button id="close-settings" class="text-white/20 hover:text-white transition-all text-[10px] font-black tracking-[0.2em]">RETURN TO UPLINK</button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                        <!-- VPS Management -->
+                        <section>
+                            <h3 class="text-[10px] font-black tracking-[0.3em] text-white/40 mb-8 flex items-center">
+                                <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                                NODE ARCHITECTURE (VPS)
+                            </h3>
+
+                            <form id="add-node-form" class="space-y-6 mb-10">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <input type="text" id="node-name" placeholder="NODE_IDENTIFIER" class="bg-white/[0.02] border border-white/5 rounded-xl px-5 py-3 outline-none focus:border-white/20 transition-all text-[9px]" required>
+                                    <input type="text" id="node-ip" placeholder="VPS_IP_ADDRESS" class="bg-white/[0.02] border border-white/5 rounded-xl px-5 py-3 outline-none focus:border-white/20 transition-all text-[9px]" required>
+                                </div>
+                                <button type="submit" class="w-full border border-white/10 hover:bg-white hover:text-black py-3 rounded-xl font-black text-[8px] tracking-[0.3em] transition-all">REGISTER VPS NODE</button>
+                            </form>
+
+                            <div id="nodes-list" class="space-y-3">
+                                <!-- Nodes will appear here -->
+                            </div>
+                        </section>
+
+                        <!-- System Info -->
+                        <section>
+                            <h3 class="text-[10px] font-black tracking-[0.3em] text-white/40 mb-8 flex items-center">
+                                <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                CORE STATUS
+                            </h3>
+                            <div class="bg-white/[0.02] border border-white/5 rounded-2xl p-6 space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[8px] text-white/20 font-black">ACTIVE INSTANCES</span>
+                                    <span id="active-instances-count" class="text-[10px] font-black">0</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[8px] text-white/20 font-black">REGISTERED NODES</span>
+                                    <span id="registered-nodes-count" class="text-[10px] font-black">0</span>
+                                </div>
+                                <div class="pt-4 border-t border-white/5">
+                                    <span class="text-[7px] text-white/10 font-black tracking-widest leading-loose">NEXUS PROTOCOL V2.4.0 RUNNING ON DISTRIBUTED NEURAL NETWORK. ALL UPLINKS SECURED.</span>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </div>
 
             <!-- Idle State -->
             <div id="no-bot-selected" class="absolute inset-0 flex flex-col items-center justify-center z-10 transition-all duration-700">
@@ -121,6 +179,12 @@
                         <label class="block text-[8px] font-black tracking-[0.3em] text-white/20 mb-4">CATEGORY</label>
                         <input type="text" id="category" placeholder="NEURAL_GRID" class="w-full bg-white/[0.02] border border-white/5 rounded-xl px-5 py-4 outline-none focus:border-white/20 transition-all text-[10px]">
                     </div>
+                </div>
+                <div>
+                    <label class="block text-[8px] font-black tracking-[0.3em] text-white/20 mb-4">DEPLOYMENT NODE (VPS)</label>
+                    <select id="bot-node" class="w-full bg-white/[0.02] border border-white/5 rounded-xl px-5 py-4 outline-none focus:border-white/20 transition-all text-[10px] appearance-none">
+                        <option value="CORE_LOCAL">CORE_LOCAL (DEFAULT)</option>
+                    </select>
                 </div>
                 <div class="grid grid-cols-3 gap-6">
                     <div class="col-span-2">

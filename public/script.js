@@ -19,7 +19,18 @@ const botCount = document.getElementById('bot-count');
 const emptySidebar = document.getElementById('empty-sidebar');
 const categoryFilters = document.getElementById('category-filters');
 
+// Settings Elements
+const settingsTrigger = document.getElementById('settings-trigger');
+const settingsView = document.getElementById('settings-view');
+const closeSettings = document.getElementById('close-settings');
+const addNodeForm = document.getElementById('add-node-form');
+const nodesList = document.getElementById('nodes-list');
+const botNodeSelect = document.getElementById('bot-node');
+const activeInstancesCount = document.getElementById('active-instances-count');
+const registeredNodesCount = document.getElementById('registered-nodes-count');
+
 let bots = [];
+let nodes = [];
 let selectedBotId = null;
 let currentCategory = 'ALL';
 
@@ -28,18 +39,33 @@ addBotTrigger.onclick = () => addBotModal.classList.remove('hidden');
 closeModal.onclick = () => addBotModal.classList.add('hidden');
 addBotModal.onclick = (e) => { if (e.target === addBotModal) addBotModal.classList.add('hidden'); };
 
-// Form Submission
+// Settings Navigation
+settingsTrigger.onclick = () => settingsView.classList.remove('hidden');
+closeSettings.onclick = () => settingsView.classList.add('hidden');
+
+// Form Submissions
 botForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const data = {
         username: document.getElementById('username').value.toUpperCase(),
         host: (document.getElementById('host').value || 'PLAY.BANANASMP.NET').toUpperCase(),
         port: parseInt(document.getElementById('port').value) || 25565,
-        category: (document.getElementById('category').value || 'NEURAL_GRID').toUpperCase()
+        category: (document.getElementById('category').value || 'NEURAL_GRID').toUpperCase(),
+        nodeId: document.getElementById('bot-node').value
     };
     socket.emit('add-bot', data);
     botForm.reset();
     addBotModal.classList.add('hidden');
+});
+
+addNodeForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const data = {
+        name: document.getElementById('node-name').value.toUpperCase(),
+        ip: document.getElementById('node-ip').value
+    };
+    socket.emit('add-node', data);
+    addNodeForm.reset();
 });
 
 // Socket Events
@@ -47,12 +73,20 @@ socket.on('bots-list', (botList) => {
     bots = botList;
     updateCategoryFilters();
     updateSidebar();
+    activeInstancesCount.textContent = bots.length;
+});
+
+socket.on('nodes-list', (nodeList) => {
+    nodes = nodeList;
+    updateNodesUI();
+    registeredNodesCount.textContent = nodes.length;
 });
 
 socket.on('bot-added', (bot) => {
     bots.push(bot);
     updateCategoryFilters();
     updateSidebar();
+    activeInstancesCount.textContent = bots.length;
 });
 
 socket.on('bot-status', (updatedBot) => {
@@ -87,9 +121,47 @@ socket.on('bot-removed', (botId) => {
     }
     updateCategoryFilters();
     updateSidebar();
+    activeInstancesCount.textContent = bots.length;
 });
 
 // Rendering Functions
+function updateNodesUI() {
+    nodesList.innerHTML = '';
+    botNodeSelect.innerHTML = '<option value="CORE_LOCAL">CORE_LOCAL (DEFAULT)</option>';
+
+    nodes.forEach(node => {
+        // Update Nodes List in Settings
+        const div = document.createElement('div');
+        div.className = 'bg-white/[0.01] border border-white/5 rounded-xl p-4 flex items-center justify-between';
+
+        const info = document.createElement('div');
+        const name = document.createElement('div');
+        name.className = 'text-[9px] font-black tracking-widest';
+        name.textContent = node.name;
+        const ip = document.createElement('div');
+        ip.className = 'text-[7px] text-white/20 font-black';
+        ip.textContent = node.ip;
+
+        info.appendChild(name);
+        info.appendChild(ip);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'text-white/10 hover:text-red-500 transition-colors';
+        removeBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>';
+        removeBtn.onclick = () => socket.emit('remove-node', node.id);
+
+        div.appendChild(info);
+        div.appendChild(removeBtn);
+        nodesList.appendChild(div);
+
+        // Update Select Dropdown
+        const option = document.createElement('option');
+        option.value = node.id;
+        option.textContent = node.name;
+        botNodeSelect.appendChild(option);
+    });
+}
+
 function updateCategoryFilters() {
     const categories = ['ALL', ...new Set(bots.map(b => b.category))];
     categoryFilters.innerHTML = '';
@@ -119,7 +191,6 @@ function updateSidebar() {
         emptySidebar.classList.add('hidden');
     }
 
-    // Clear and render existing cards
     const existingCards = botsGrid.querySelectorAll('.bot-card');
     existingCards.forEach(c => c.remove());
 
@@ -127,7 +198,6 @@ function updateSidebar() {
         const div = document.createElement('div');
         div.className = `bot-card p-5 rounded-xl cursor-pointer transition-all border ${selectedBotId === bot.id ? 'border-white/20 bg-white/[0.05]' : 'border-white/5 bg-white/[0.01] hover:bg-white/[0.03]'}`;
 
-        // Use textContent to prevent XSS
         const header = document.createElement('div');
         header.className = 'flex items-center justify-between mb-2';
 
@@ -142,8 +212,19 @@ function updateSidebar() {
         header.appendChild(statusSpan);
 
         const infoDiv = document.createElement('div');
-        infoDiv.className = 'text-[8px] text-white/20 font-black tracking-[0.2em] truncate';
-        infoDiv.textContent = `${bot.host}:${bot.port}`;
+        infoDiv.className = 'flex justify-between items-center';
+
+        const ipSpan = document.createElement('span');
+        ipSpan.className = 'text-[8px] text-white/20 font-black tracking-[0.2em] truncate';
+        ipSpan.textContent = `${bot.host}:${bot.port}`;
+
+        const nodeSpan = document.createElement('span');
+        nodeSpan.className = 'text-[6px] text-white/10 font-black border border-white/5 px-1.5 py-0.5 rounded';
+        const nodeName = nodes.find(n => n.id === bot.nodeId)?.name || 'CORE_LOCAL';
+        nodeSpan.textContent = nodeName;
+
+        infoDiv.appendChild(ipSpan);
+        infoDiv.appendChild(nodeSpan);
 
         div.appendChild(header);
         div.appendChild(infoDiv);

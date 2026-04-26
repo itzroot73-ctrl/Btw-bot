@@ -13,13 +13,35 @@ const PORT = process.env.PORT || 3000;
 class BotManager {
     constructor() {
         this.bots = new Map();
+        this.nodes = [];
+    }
+
+    addNode(node) {
+        const newNode = {
+            id: `node-${Date.now()}`,
+            name: node.name,
+            ip: node.ip
+        };
+        this.nodes.push(newNode);
+        return newNode;
+    }
+
+    removeNode(nodeId) {
+        this.nodes = this.nodes.filter(n => n.id !== nodeId);
+        return true;
+    }
+
+    getAllNodes() {
+        return this.nodes;
     }
 
     addBot(options) {
-        const { username, host, port, category } = options;
+        const { username, host, port, category, nodeId } = options;
         const actualUsername = username || `Bot_${Math.floor(Math.random() * 1000)}`;
         const botId = `${actualUsername}-${host}-${Date.now()}`;
 
+        // In a real multi-node system, we would proxy this connection to the VPS
+        // For this panel implementation, we'll simulate the node assignment
         const bot = mineflayer.createBot({
             host: host || 'play.bananasmp.net',
             port: port || 25565,
@@ -32,6 +54,7 @@ class BotManager {
             host: host || 'play.bananasmp.net',
             port: port || 25565,
             category: category || 'Default',
+            nodeId: nodeId || 'CORE_LOCAL',
             status: 'connecting',
             messages: []
         };
@@ -92,6 +115,7 @@ io.on('connection', (socket) => {
     console.log('a user connected');
 
     socket.emit('bots-list', botManager.getAllBots());
+    socket.emit('nodes-list', botManager.getAllNodes());
 
     socket.on('add-bot', (options) => {
         const botData = botManager.addBot(options);
@@ -109,6 +133,16 @@ io.on('connection', (socket) => {
         if (botManager.removeBot(botId)) {
             io.emit('bot-removed', botId);
         }
+    });
+
+    socket.on('add-node', (nodeData) => {
+        botManager.addNode(nodeData);
+        io.emit('nodes-list', botManager.getAllNodes());
+    });
+
+    socket.on('remove-node', (nodeId) => {
+        botManager.removeNode(nodeId);
+        io.emit('nodes-list', botManager.getAllNodes());
     });
 
     socket.on('disconnect', () => {
