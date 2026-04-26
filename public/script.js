@@ -1,6 +1,3 @@
-// Initialize Socket.io
-let socket = io();
-
 // DOM Elements
 const botForm = document.getElementById('add-bot-form');
 const botsGrid = document.getElementById('bots-grid');
@@ -31,77 +28,64 @@ const activeInstancesCount = document.getElementById('active-instances-count');
 const registeredNodesCount = document.getElementById('registered-nodes-count');
 const apiEndpointInput = document.getElementById('api-endpoint');
 const saveEndpointBtn = document.getElementById('save-endpoint');
+const connectionStatus = document.getElementById('connection-status');
 
+let socket;
 let bots = [];
 let nodes = [];
 let selectedBotId = null;
 let currentCategory = 'ALL';
 
-// Load saved endpoint
-const savedEndpoint = localStorage.getItem('nexus-api-endpoint');
-if (savedEndpoint) {
-    apiEndpointInput.value = savedEndpoint;
-    connectToSocket(savedEndpoint);
-} else {
-    setupSocketHandlers();
-}
-
-function connectToSocket(url) {
-    if (socket) socket.disconnect();
-    socket = io(url);
-    setupSocketHandlers();
-}
-
-saveEndpointBtn.onclick = () => {
-    const url = apiEndpointInput.value.trim();
-    if (url) {
-        localStorage.setItem('nexus-api-endpoint', url);
-        connectToSocket(url);
-        alert('REMOTE CONNECTION ESTABLISHED');
-    } else {
-        localStorage.removeItem('nexus-api-endpoint');
-        location.reload();
-    }
-};
+// --- UI EVENT LISTENERS (ALWAYS ENABLED) ---
 
 // Modal Controls
-addBotTrigger.onclick = () => addBotModal.classList.remove('hidden');
+addBotTrigger.onclick = () => {
+    addBotModal.classList.remove('hidden');
+};
 closeModal.onclick = () => addBotModal.classList.add('hidden');
 addBotModal.onclick = (e) => { if (e.target === addBotModal) addBotModal.classList.add('hidden'); };
 
 // Settings Navigation
-settingsTrigger.onclick = () => settingsView.classList.remove('hidden');
+settingsTrigger.onclick = () => {
+    settingsView.classList.remove('hidden');
+};
 closeSettings.onclick = () => settingsView.classList.add('hidden');
 
-// Form Submissions
-botForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const data = {
-        username: document.getElementById('username').value.toUpperCase(),
-        host: (document.getElementById('host').value || 'PLAY.BANANASMP.NET').toUpperCase(),
-        port: parseInt(document.getElementById('port').value) || 25565,
-        category: (document.getElementById('category').value || 'NEURAL_GRID').toUpperCase(),
-        nodeId: document.getElementById('bot-node').value
-    };
-    socket.emit('add-bot', data);
-    botForm.reset();
-    addBotModal.classList.add('hidden');
-});
+// --- SOCKET LOGIC ---
 
-addNodeForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const data = {
-        name: document.getElementById('node-name').value.toUpperCase(),
-        ip: document.getElementById('node-ip').value
-    };
-    socket.emit('add-node', data);
-    addNodeForm.reset();
-});
+function connectToSocket(url = '') {
+    console.log(`Connecting to Nexus Core: ${url || 'Local'}`);
+    if (socket) socket.disconnect();
 
-// Socket Event Handlers Wrapper
+    try {
+        if (typeof io === 'undefined') {
+            console.error('Socket.io library not loaded. UI will remain active but offline.');
+            return;
+        }
+
+        socket = url ? io(url) : io();
+        setupSocketHandlers();
+    } catch (e) {
+        console.error('Failed to initialize socket:', e);
+    }
+}
+
 function setupSocketHandlers() {
     socket.on('connect', () => {
-        console.log('connected to nexus core');
+        console.log('Connected to Nexus Core');
+        connectionStatus.textContent = 'ONLINE';
+        connectionStatus.className = 'absolute right-5 top-1/2 -translate-y-1/2 text-[6px] font-black tracking-widest text-green-500';
+    });
+
+    socket.on('disconnect', () => {
+        connectionStatus.textContent = 'OFFLINE';
+        connectionStatus.className = 'absolute right-5 top-1/2 -translate-y-1/2 text-[6px] font-black tracking-widest text-white/20';
+    });
+
+    socket.on('connect_error', (err) => {
+        console.error('Connection Error:', err.message);
+        connectionStatus.textContent = 'ERROR';
+        connectionStatus.className = 'absolute right-5 top-1/2 -translate-y-1/2 text-[6px] font-black tracking-widest text-red-500';
     });
 
     socket.on('bots-list', (botList) => {
@@ -159,6 +143,60 @@ function setupSocketHandlers() {
         activeInstancesCount.textContent = bots.length;
     });
 }
+
+// Initial Connection
+const savedEndpoint = localStorage.getItem('nexus-api-endpoint');
+if (savedEndpoint) {
+    apiEndpointInput.value = savedEndpoint;
+    connectToSocket(savedEndpoint);
+} else {
+    connectToSocket();
+}
+
+saveEndpointBtn.onclick = () => {
+    const url = apiEndpointInput.value.trim();
+    if (url) {
+        localStorage.setItem('nexus-api-endpoint', url);
+        connectToSocket(url);
+        alert('REMOTE CONNECTION ESTABLISHED');
+    } else {
+        localStorage.removeItem('nexus-api-endpoint');
+        location.reload();
+    }
+};
+
+// Form Submissions
+botForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!socket || !socket.connected) {
+        alert('UPLINK DISCONNECTED. CANNOT INITIALIZE DEPLOYMENT.');
+        return;
+    }
+    const data = {
+        username: document.getElementById('username').value.toUpperCase(),
+        host: (document.getElementById('host').value || 'PLAY.BANANASMP.NET').toUpperCase(),
+        port: parseInt(document.getElementById('port').value) || 25565,
+        category: (document.getElementById('category').value || 'NEURAL_GRID').toUpperCase(),
+        nodeId: document.getElementById('bot-node').value
+    };
+    socket.emit('add-bot', data);
+    botForm.reset();
+    addBotModal.classList.add('hidden');
+});
+
+addNodeForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!socket || !socket.connected) {
+        alert('UPLINK DISCONNECTED. CANNOT REGISTER NODE.');
+        return;
+    }
+    const data = {
+        name: document.getElementById('node-name').value.toUpperCase(),
+        ip: document.getElementById('node-ip').value
+    };
+    socket.emit('add-node', data);
+    addNodeForm.reset();
+});
 
 // Rendering Functions
 function updateNodesUI() {
