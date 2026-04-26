@@ -86,3 +86,35 @@ body {
         padding: 1rem !important;
     }
 }
+
+/* Additional Mobile Fixes */
+@media (max-width: 480px) {
+    #no-bot-selected h2 {
+        font-size: 1.1rem !important;
+        letter-spacing: 0.1em !important;
+    }
+
+    #no-bot-selected p {
+        font-size: 7px !important;
+        padding: 0 1rem;
+    }
+
+    .bot-card {
+        padding: 1rem !important;
+    }
+}
+
+@media (max-width: 380px) {
+    #chat-container, #settings-view, #no-bot-selected {
+        padding: 0.75rem !important;
+    }
+
+    header {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+    }
+
+    #no-bot-selected h2 {
+        font-size: 0.9rem !important;
+    }
+}

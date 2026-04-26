@@ -54,7 +54,7 @@ if (sidebarOverlay) {
 }
 
 function closeSidebar() {
-    if (window.innerWidth < 1024) {
+    if (window.innerWidth < 1280) {
         sidebar.classList.remove("open");
         sidebarOverlay.classList.add("hidden");
         sidebarOverlay.classList.remove("visible");
