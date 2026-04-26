@@ -1,12 +1,15 @@
 :root {
-    --glass-bg: rgba(255, 255, 255, 0.03);
-    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-bg: rgba(61, 43, 31, 0.2);
+    --glass-border: rgba(188, 138, 95, 0.15);
+    --primary-brown: #8b5e34;
+    --light-brown: #bc8a5f;
+    --cream: #f5ebe0;
 }
 
 .glass {
     background: var(--glass-bg);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--glass-border);
 }
 
@@ -14,8 +17,8 @@
 
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #222; border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: #333; }
+::-webkit-scrollbar-thumb { background: #3d2b1f; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #5a4030; }
 
 /* Custom Animations */
 @keyframes slideInUp {
@@ -40,4 +43,16 @@
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
+}
+
+/* Elegant Scrollbars and Overlays */
+#bots-grid, #chat-window {
+    scrollbar-gutter: stable;
+}
+
+#chat-window {
+    background: rgba(26, 15, 10, 0.4);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    border: 1px solid rgba(139, 94, 52, 0.1);
 }
