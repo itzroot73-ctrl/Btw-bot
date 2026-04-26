@@ -173,8 +173,8 @@ botForm.addEventListener('submit', (e) => {
         return;
     }
     const data = {
-        username: document.getElementById('username').value.toUpperCase(),
-        host: (document.getElementById('host').value || 'PLAY.BANANASMP.NET').toUpperCase(),
+        username: document.getElementById('username').value,
+        host: (document.getElementById('host').value || 'PLAY.BANANASMP.NET'),
         port: parseInt(document.getElementById('port').value) || 25565,
         category: (document.getElementById('category').value || 'NEURAL_GRID').toUpperCase(),
         nodeId: document.getElementById('bot-node').value

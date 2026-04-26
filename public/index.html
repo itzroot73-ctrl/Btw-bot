@@ -73,7 +73,7 @@
                         <button id="close-settings" class="text-white/20 hover:text-white transition-all text-[10px] font-black tracking-[0.2em]">RETURN TO UPLINK</button>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
                         <!-- VPS Management -->
                         <section>
                             <h3 class="text-[10px] font-black tracking-[0.3em] text-white/40 mb-8 flex items-center">
@@ -116,7 +116,7 @@
                         </section>
 
                         <!-- API Configuration -->
-                        <section class="mt-12">
+                        <section>
                             <h3 class="text-[10px] font-black tracking-[0.3em] text-white/40 mb-8 flex items-center">
                                 <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
                                 UPLINK ENDPOINT
@@ -127,6 +127,36 @@
                                     <div id="connection-status" class="absolute right-5 top-1/2 -translate-y-1/2 text-[6px] font-black tracking-widest text-white/20">OFFLINE</div>
                                 </div>
                                 <button id="save-endpoint" class="w-full border border-white/10 hover:bg-white hover:text-black py-3 rounded-xl font-black text-[8px] tracking-[0.3em] transition-all">ESTABLISH REMOTE CONNECTION</button>
+                            </div>
+                        </section>
+
+                        <!-- System Guide -->
+                        <section class="lg:col-span-3 mt-8 border-t border-white/5 pt-12">
+                            <h3 class="text-[10px] font-black tracking-[0.3em] text-white/40 mb-10 flex items-center">
+                                <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                                OPERATIONAL PROTOCOLS (GUIDE)
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                                <div class="space-y-4">
+                                    <h4 class="text-[8px] font-black text-white/60 tracking-widest uppercase">01. Node Registration</h4>
+                                    <p class="text-[7px] text-white/20 font-black leading-relaxed tracking-widest">REGISTER YOUR VPS BY PROVIDING A UNIQUE IDENTIFIER AND ITS PUBLIC IP ADDRESS. THIS ALLOWS THE NEXUS TO TRACK YOUR DISTRIBUTED ARCHITECTURE.</p>
+                                </div>
+                                <div class="space-y-4">
+                                    <h4 class="text-[8px] font-black text-white/60 tracking-widest uppercase">02. Instance Deployment</h4>
+                                    <p class="text-[7px] text-white/20 font-black leading-relaxed tracking-widest">USE '+ NEW INSTANCE' TO INITIALIZE A BOT. DEFAULT UPLINK IS PLAY.BANANASMP.NET. ASSIGN UNITS TO SPECIFIC VPS NODES FOR LOAD BALANCING.</p>
+                                </div>
+                                <div class="space-y-4">
+                                    <h4 class="text-[8px] font-black text-white/60 tracking-widest uppercase">03. Neural Grids</h4>
+                                    <p class="text-[7px] text-white/20 font-black leading-relaxed tracking-widest">ORGANIZE YOUR FLEET USING CUSTOM CATEGORIES. FILTER YOUR ACTIVE OVERVIEW BY SELECTING CATEGORY TABS IN THE SIDEBAR.</p>
+                                </div>
+                                <div class="space-y-4">
+                                    <h4 class="text-[8px] font-black text-white/60 tracking-widest uppercase">04. Remote Uplink</h4>
+                                    <p class="text-[7px] text-white/20 font-black leading-relaxed tracking-widest">IF RUNNING THE UI VIA NETLIFY, CONFIGURE YOUR 'CORE API ENDPOINT' TO POINT TO YOUR STANDALONE NODE.JS SERVER URL (E.G. RENDER OR VPS).</p>
+                                </div>
+                                <div class="space-y-4 lg:col-span-4 mt-6 p-6 border border-white/5 bg-white/[0.01] rounded-2xl">
+                                    <h4 class="text-[8px] font-black text-white/60 tracking-widest uppercase mb-4">💡 PRO TIP: TEXT FORMATTING</h4>
+                                    <p class="text-[7px] text-white/20 font-black leading-relaxed tracking-widest">THE INTERFACE USES AN ALL-CAPS AESTHETIC FOR VISUAL IMPACT. HOWEVER, THE SYSTEM PRESERVES SMALL LETTERS (LOWERCASE) FOR USERNAMES AND PASSWORDS TO ENSURE COMPATIBILITY WITH MINECRAFT SERVER REQUIREMENTS. TYPE NATURALLY; THE CORE HANDLES THE REST.</p>
+                                </div>
                             </div>
                         </section>
                     </div>
