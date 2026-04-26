@@ -36,6 +36,22 @@ body {
     padding-left: 1.5rem;
 }
 
+.image-pixelated {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+.scanline {
+    background: linear-gradient(to bottom, transparent 50%, rgba(255, 255, 255, 0.05) 50%);
+    background-size: 100% 4px;
+    animation: scan 10s linear infinite;
+}
+
+@keyframes scan {
+    from { background-position: 0 0; }
+    to { background-position: 0 100%; }
+}
+
 .no-scrollbar::-webkit-scrollbar {
     display: none;
 }

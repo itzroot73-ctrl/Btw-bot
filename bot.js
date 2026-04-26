@@ -48,6 +48,14 @@ bot.on('end', () => {
     emitEvent('status', { status: 'offline' });
 });
 
+// Capture Map Data
+bot.on('map', (data) => {
+    // Send only the essential color data buffer as an array
+    if (data.colors) {
+        emitEvent('map', { colors: Array.from(data.colors) });
+    }
+});
+
 // Listen for messages from parent (e.g., to send chat)
 process.on('message', (msg) => {
     if (msg.type === 'send-chat' && bot) {

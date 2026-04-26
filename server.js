@@ -126,6 +126,11 @@ io.on('connection', (socket) => {
         io.emit('bot-status', data);
     });
 
+    socket.on('relay-map', (data) => {
+        // data: { botId, colors }
+        io.emit('bot-map', data);
+    });
+
     socket.on('disconnect', () => console.log('Neural Link terminated'));
 });
 

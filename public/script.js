@@ -29,6 +29,9 @@ const registeredNodesCount = document.getElementById('registered-nodes-count');
 const apiEndpointInput = document.getElementById('api-endpoint');
 const saveEndpointBtn = document.getElementById('save-endpoint');
 const connectionStatus = document.getElementById('connection-status');
+const mapCanvas = document.getElementById('map-canvas');
+const mapStatus = document.getElementById('map-status');
+const refreshMapBtn = document.getElementById('refresh-map');
 
 let socket;
 let bots = [];
@@ -127,6 +130,16 @@ function setupSocketHandlers() {
             if (bot.messages.length > 100) bot.messages.shift();
             if (selectedBotId === botId) {
                 appendChatMessage(msg);
+            }
+        }
+    });
+
+    socket.on('bot-map', ({ botId, colors }) => {
+        const bot = bots.find(b => b.id === botId);
+        if (bot) {
+            bot.mapData = colors;
+            if (selectedBotId === botId) {
+                renderMap(colors);
             }
         }
     });
@@ -341,10 +354,75 @@ function selectBot(botId) {
     chatWindow.innerHTML = '';
     bot.messages.forEach(msg => appendChatMessage(msg));
 
+    if (bot.mapData) {
+        renderMap(bot.mapData);
+    } else {
+        clearMap();
+    }
+
     updateChatHeader();
     updateChatControls();
     updateSidebar();
 }
+
+// --- MAP RENDERING ---
+
+const MAP_PALETTE = [
+    [0, 0, 0], [127, 178, 56], [247, 233, 163], [199, 199, 199], [255, 0, 0], [160, 160, 255], [167, 167, 167], [0, 124, 0],
+    [255, 255, 255], [164, 168, 184], [151, 109, 77], [112, 112, 112], [64, 64, 255], [143, 119, 72], [255, 252, 245], [216, 127, 51],
+    [178, 76, 216], [102, 153, 216], [229, 229, 51], [127, 204, 25], [242, 127, 165], [76, 76, 76], [153, 153, 153], [76, 127, 153],
+    [127, 63, 178], [51, 76, 178], [102, 76, 51], [102, 127, 51], [153, 51, 51], [25, 25, 25], [250, 238, 77], [92, 219, 213],
+    [74, 128, 255], [0, 217, 58], [129, 62, 19], [112, 2, 0], [209, 177, 161], [197, 119, 50], [164, 75, 196], [100, 152, 215],
+    [228, 228, 50], [126, 203, 24], [241, 126, 164], [75, 75, 75], [152, 152, 152], [75, 126, 152], [126, 62, 177], [50, 75, 177],
+    [101, 75, 50], [101, 126, 50], [152, 50, 50], [24, 24, 24], [255, 255, 255] // Simplified palette
+];
+
+function renderMap(colors) {
+    const ctx = mapCanvas.getContext('2d');
+    const imageData = ctx.createImageData(128, 128);
+
+    for (let i = 0; i < colors.length; i++) {
+        const colorId = colors[i];
+        const baseColorId = Math.floor(colorId / 4);
+        const shade = colorId % 4;
+
+        let rgb = MAP_PALETTE[baseColorId] || [0, 0, 0];
+
+        // Apply shading (Minecraft map shading logic: 180, 220, 255, 135)
+        const mult = [180/255, 220/255, 1.0, 135/255][shade];
+
+        imageData.data[i * 4] = rgb[0] * mult;
+        imageData.data[i * 4 + 1] = rgb[1] * mult;
+        imageData.data[i * 4 + 2] = rgb[2] * mult;
+        imageData.data[i * 4 + 3] = 255;
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+    mapStatus.textContent = 'SYNCED';
+    mapStatus.classList.remove('text-white/10');
+    mapStatus.classList.add('text-green-500');
+
+    mapCanvas.classList.remove('grayscale', 'opacity-50');
+}
+
+function clearMap() {
+    const ctx = mapCanvas.getContext('2d');
+    ctx.clearRect(0, 0, 128, 128);
+    mapStatus.textContent = 'STALE';
+    mapStatus.classList.add('text-white/10');
+    mapStatus.classList.remove('text-green-500');
+    mapCanvas.classList.add('grayscale', 'opacity-50');
+}
+
+refreshMapBtn.onclick = () => {
+    mapStatus.textContent = 'POLLING...';
+    // Request fresh map data if needed, or just visual feedback
+    setTimeout(() => {
+        const bot = bots.find(b => b.id === selectedBotId);
+        if (bot && bot.mapData) renderMap(bot.mapData);
+        else clearMap();
+    }, 500);
+};
 
 function updateChatHeader() {
     const bot = bots.find(b => b.id === selectedBotId);

@@ -175,8 +175,9 @@
             </div>
 
             <!-- Active Interface -->
-            <div id="chat-container" class="hidden opacity-0 flex-1 flex flex-col p-10 z-20 transition-all duration-700">
-                <!-- Chat header and window as before but refined -->
+            <div id="chat-container" class="hidden opacity-0 flex-1 flex flex-row p-10 z-20 transition-all duration-700 space-x-10">
+                <!-- Main Chat Area -->
+                <div class="flex-1 flex flex-col min-w-0">
                 <div id="active-bot-header" class="mb-10 flex items-center justify-between border border-white/5 p-6 rounded-2xl bg-white/[0.01]">
                     <div class="flex items-center space-x-6">
                         <div id="bot-status-indicator" class="w-2 h-2 rounded-full bg-white"></div>
@@ -192,14 +193,47 @@
                     <!-- Logs -->
                 </div>
 
-                <div class="flex items-center space-x-4">
-                    <div class="flex-1 relative group">
-                        <input type="text" id="chat-input" placeholder="AUTHORIZE COMMAND EXECUTION..." class="w-full bg-white/[0.02] border border-white/5 rounded-2xl px-6 py-4 outline-none focus:border-white/20 transition-all fira-code text-[10px] placeholder:text-white/10" disabled>
-                        <div class="absolute right-6 top-1/2 -translate-y-1/2 text-[7px] text-white/10 font-black tracking-[0.2em]">READY</div>
+                    <div class="flex items-center space-x-4">
+                        <div class="flex-1 relative group">
+                            <input type="text" id="chat-input" placeholder="AUTHORIZE COMMAND EXECUTION..." class="w-full bg-white/[0.02] border border-white/5 rounded-2xl px-6 py-4 outline-none focus:border-white/20 transition-all fira-code text-[10px] placeholder:text-white/10" disabled>
+                            <div class="absolute right-6 top-1/2 -translate-y-1/2 text-[7px] text-white/10 font-black tracking-[0.2em]">READY</div>
+                        </div>
+                        <button id="send-chat-btn" class="bg-white hover:bg-gray-100 text-black w-14 h-14 flex items-center justify-center rounded-2xl transition-all disabled:opacity-10" disabled>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                        </button>
                     </div>
-                    <button id="send-chat-btn" class="bg-white hover:bg-gray-100 text-black w-14 h-14 flex items-center justify-center rounded-2xl transition-all disabled:opacity-10" disabled>
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-                    </button>
+                </div>
+
+                <!-- Visual Uplink Sidebar (Map) -->
+                <div id="visual-uplink" class="w-64 flex flex-col space-y-8">
+                    <div class="border border-white/5 bg-white/[0.01] rounded-2xl p-6 flex flex-col h-full">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-[9px] font-black tracking-[0.3em] text-white/40 flex items-center uppercase">
+                                <svg class="w-3.5 h-3.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A2 2 0 013 15.488V5.512a2 2 0 011.553-1.944L9 2l5.447 2.724A2 2 0 0116 6.668V16.512a2 2 0 01-1.553 1.944L9 20z"></path></svg>
+                                NAV_MAP DATA
+                            </h3>
+                            <span id="map-status" class="text-[6px] font-black tracking-widest text-white/10">STALE</span>
+                        </div>
+
+                        <div class="aspect-square bg-black border border-white/5 rounded-xl overflow-hidden relative group">
+                            <canvas id="map-canvas" width="128" height="128" class="w-full h-full image-pixelated grayscale opacity-50 group-hover:opacity-100 transition-all"></canvas>
+                            <div class="absolute inset-0 pointer-events-none border border-white/5"></div>
+                            <!-- Scanline Animation -->
+                            <div class="absolute inset-0 scanline opacity-5"></div>
+                        </div>
+
+                        <div class="mt-8 space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[7px] text-white/20 font-black">RESOLUTION</span>
+                                <span class="text-[8px] font-black">128X128 PX</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-[7px] text-white/20 font-black">SYNC_RATE</span>
+                                <span class="text-[8px] font-black">REAL-TIME</span>
+                            </div>
+                            <button id="refresh-map" class="w-full mt-4 border border-white/10 hover:bg-white hover:text-black py-3 rounded-xl font-black text-[7px] tracking-[0.3em] transition-all">REFRESH UPLINK</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
