@@ -25,6 +25,7 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "mineflayer": "^4.37.0",
+    "ping": "^1.0.0",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3"
   }

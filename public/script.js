@@ -205,26 +205,47 @@ function updateNodesUI() {
 
     nodes.forEach(node => {
         const div = document.createElement('div');
-        div.className = 'bg-white/[0.01] border border-white/5 rounded-xl p-4 flex items-center justify-between';
+        div.className = 'bg-white/[0.01] border border-white/5 rounded-xl p-4 flex items-center justify-between group';
 
         const info = document.createElement('div');
-        const name = document.createElement('div');
+        const header = document.createElement('div');
+        header.className = 'flex items-center space-x-2 mb-1';
+
+        const statusDot = document.createElement('span');
+        statusDot.className = `w-1 h-1 rounded-full status-${node.status}`;
+
+        const name = document.createElement('span');
         name.className = 'text-[9px] font-black tracking-widest';
         name.textContent = node.name;
-        const ip = document.createElement('div');
-        ip.className = 'text-[7px] text-white/20 font-black';
-        ip.textContent = node.ip;
 
-        info.appendChild(name);
-        info.appendChild(ip);
+        header.appendChild(statusDot);
+        header.appendChild(name);
+
+        const details = document.createElement('div');
+        details.className = 'text-[7px] text-white/20 font-black flex items-center space-x-3';
+        details.innerHTML = `<span>IP: ${node.ip}</span> <span class="text-white/40">UNITS: ${node.botCount || 0}</span>`;
+
+        info.appendChild(header);
+        info.appendChild(details);
+
+        const actions = document.createElement('div');
+        actions.className = 'flex items-center space-x-3 opacity-0 group-hover:opacity-100 transition-opacity';
+
+        const pingBtn = document.createElement('button');
+        pingBtn.className = 'text-white/10 hover:text-white transition-colors';
+        pingBtn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>';
+        pingBtn.title = 'RE-SCAN NODE';
+        pingBtn.onclick = () => socket.emit('ping-node', node.id);
 
         const removeBtn = document.createElement('button');
         removeBtn.className = 'text-white/10 hover:text-red-500 transition-colors';
-        removeBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>';
-        removeBtn.onclick = () => socket.emit('remove-node', node.id);
+        removeBtn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>';
+        removeBtn.onclick = () => { if(confirm('DECOMMISSION NODE?')) socket.emit('remove-node', node.id); };
 
+        actions.appendChild(pingBtn);
+        actions.appendChild(removeBtn);
         div.appendChild(info);
-        div.appendChild(removeBtn);
+        div.appendChild(actions);
         nodesList.appendChild(div);
 
         const option = document.createElement('option');

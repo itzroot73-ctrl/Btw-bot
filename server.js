@@ -3,36 +3,91 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const { fork } = require('child_process');
+const fs = require('fs');
+const ping = require('ping');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
+const NODES_FILE = path.join(__dirname, 'nodes.json');
 
 class BotManager {
     constructor() {
         this.bots = new Map();
-        this.nodes = [];
+        this.nodes = this.loadNodes();
+        this.startHealthChecks();
+    }
+
+    loadNodes() {
+        if (fs.existsSync(NODES_FILE)) {
+            try {
+                const data = fs.readFileSync(NODES_FILE, 'utf8');
+                return JSON.parse(data).map(n => ({ ...n, status: 'checking' }));
+            } catch (e) {
+                console.error('Error loading nodes:', e);
+                return [];
+            }
+        }
+        return [];
+    }
+
+    saveNodes() {
+        try {
+            // Save only persistent fields
+            const dataToSave = this.nodes.map(({ id, name, ip }) => ({ id, name, ip }));
+            fs.writeFileSync(NODES_FILE, JSON.stringify(dataToSave, null, 2));
+        } catch (e) {
+            console.error('Error saving nodes:', e);
+        }
+    }
+
+    async checkNodeHealth(nodeId) {
+        const node = this.nodes.find(n => n.id === nodeId);
+        if (!node) return;
+
+        try {
+            const res = await ping.promise.probe(node.ip, { timeout: 3 });
+            node.status = res.alive ? 'online' : 'offline';
+            io.emit('nodes-list', this.getAllNodes());
+        } catch (e) {
+            node.status = 'error';
+            io.emit('nodes-list', this.getAllNodes());
+        }
+    }
+
+    startHealthChecks() {
+        setInterval(() => {
+            this.nodes.forEach(node => this.checkNodeHealth(node.id));
+        }, 30000); // Every 30 seconds
     }
 
     addNode(node) {
         const newNode = {
             id: `node-${Date.now()}`,
             name: node.name,
-            ip: node.ip
+            ip: node.ip,
+            status: 'checking'
         };
         this.nodes.push(newNode);
+        this.saveNodes();
+        this.checkNodeHealth(newNode.id);
         return newNode;
     }
 
     removeNode(nodeId) {
         this.nodes = this.nodes.filter(n => n.id !== nodeId);
+        this.saveNodes();
         return true;
     }
 
     getAllNodes() {
-        return this.nodes;
+        return this.nodes.map(node => {
+            const botCount = Array.from(this.bots.values())
+                .filter(b => b.data.nodeId === node.id).length;
+            return { ...node, botCount };
+        });
     }
 
     addBot(options) {
@@ -40,7 +95,6 @@ class BotManager {
         const actualUsername = username || `Bot_${Math.floor(Math.random() * 1000)}`;
         const botId = `${actualUsername}-${host}-${Date.now()}`;
 
-        // Spawn bot as a separate process using bot.js
         const child = fork(path.join(__dirname, 'bot.js'), [JSON.stringify({
             host: host || 'play.bananasmp.net',
             port: port || 25565,
@@ -142,6 +196,10 @@ io.on('connection', (socket) => {
     socket.on('remove-node', (nodeId) => {
         botManager.removeNode(nodeId);
         io.emit('nodes-list', botManager.getAllNodes());
+    });
+
+    socket.on('ping-node', (nodeId) => {
+        botManager.checkNodeHealth(nodeId);
     });
 
     socket.on('disconnect', () => {
