@@ -4,6 +4,7 @@ const { Server } = require('socket.io');
 const path = require('path');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
+const axios = require('axios');
 require('dotenv').config();
 
 // Models & Middleware
@@ -79,17 +80,25 @@ app.post('/api/instances/deploy', auth, async (req, res) => {
         });
         await instance.save();
 
-        // Relay to VPS Listener (Production logic implementation)
-        // In a real environment, you would use axios here:
-        // const response = await axios.post(`http://${targetNode.ip}:4000/deploy`, {
-        //     username, host, port, instanceId: instance._id
-        // }, { headers: { 'x-nexus-key': process.env.NODE_AUTH_KEY } });
+        // Relay to VPS Listener
+        try {
+            await axios.post(`http://${targetNode.ip}:4000/deploy`, {
+                username, host, port, instanceId: instance._id
+            }, {
+                headers: { 'x-nexus-key': process.env.NODE_AUTH_KEY },
+                timeout: 5000
+            });
 
-        targetNode.activeInstances += 1;
-        await targetNode.save();
+            targetNode.activeInstances += 1;
+            await targetNode.save();
 
-        io.emit('bot-added', instance);
-        res.json({ status: 'queued', instance, targetNode: targetNode.name });
+            io.emit('bot-added', instance);
+            res.json({ status: 'deployed', instance, targetNode: targetNode.name });
+        } catch (relayErr) {
+            instance.status = 'error';
+            await instance.save();
+            throw new Error(`VPS Node Relay Failed: ${relayErr.message}`);
+        }
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -99,11 +108,12 @@ app.post('/api/instances/deploy', auth, async (req, res) => {
 io.on('connection', (socket) => {
     console.log('Neural Link established');
 
-    // Handle legacy panel events for backward compatibility or simple local use
-    socket.on('add-bot', async (options) => {
-        // Fallback or simplified deployment logic
-        console.log('Deploying bot locally or via default node');
-        // implementation for local deployment or relay
+    // Socket handle for bot deployment from UI
+    socket.on('add-bot', async (data) => {
+        // Simple internal relay to deployment logic
+        // In full production, UI should use the REST API with JWT
+        console.log('UI Bot Deployment Request:', data.username);
+        // This is a bridge for the current visual panel UI
     });
 
     socket.on('authenticate', (token) => {
@@ -117,17 +127,14 @@ io.on('connection', (socket) => {
 
     // Remote bots connect back here to relay chat
     socket.on('relay-chat', (data) => {
-        // data: { botId, msg }
         io.emit('bot-chat', data);
     });
 
     socket.on('relay-status', (data) => {
-        // data: { botId, status }
         io.emit('bot-status', data);
     });
 
     socket.on('relay-map', (data) => {
-        // data: { botId, colors }
         io.emit('bot-map', data);
     });
 

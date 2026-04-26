@@ -35,10 +35,13 @@ app.post('/deploy', secureNode, (req, res) => {
 
     pm2.start({
         name: `nexus-${instanceId}`,
-        script: path.join(__dirname, 'bot.js'),
-        args: [JSON.stringify({ username, host, port })],
+        script: path.join(__dirname, '..', 'bot.js'), // Corrected path to root
+        args: [JSON.stringify({ username, host, port, instanceId })],
         autorestart: true,
         max_restarts: 10,
+        env: {
+            CORE_URL: process.env.CORE_URL // Remote core to report back to
+        }
     }, (err, apps) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ status: 'deployed', pm2Id: apps[0].pm2_id });
