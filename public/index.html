@@ -19,19 +19,19 @@
         <div class="flex items-center space-x-5">
             <div class="w-10 h-10 bg-white rounded flex items-center justify-center font-black text-black text-xl">B</div>
             <div>
-                <h1 class="text-lg font-black tracking-[0.25em] leading-none">NEXUS BOT</h1>
+                <h1 class="text-sm sm:text-lg font-black tracking-[0.1em] sm:tracking-[0.25em] leading-none">NEXUS BOT</h1>
                 <div class="flex items-center space-x-2 mt-1.5">
                     <span class="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_5px_#ef4444]"></span>
-                    <span class="text-[7px] text-white/40 font-bold tracking-[0.1em]">CONNECTING TO CORE...</span>
+                    <span class="hidden sm:inline text-[7px] text-white/40 font-bold tracking-[0.1em]">CONNECTING TO CORE...</span>
                 </div>
             </div>
         </div>
         <div class="flex items-center space-x-4">
-            <button id="settings-trigger" class="text-white/20 hover:text-white transition-all">
+            <button id="settings-trigger" class="text-white/20 hover:text-white transition-all mr-1">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
             </button>
             <button id="add-bot-trigger" class="bg-white hover:bg-gray-200 text-black px-6 py-2 rounded-full text-[9px] font-black tracking-[0.1em] transition-all">
-                + NEW INSTANCE
+                <span class="hidden sm:inline">+ NEW INSTANCE</span><span class="sm:hidden">+ NEW</span>
             </button>
         </div>
     </header>
@@ -39,7 +39,7 @@
 
     <div class="flex flex-1 overflow-hidden">
         <!-- Sidebar -->
-        <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-80 transform -translate-x-full transition-transform duration-300 lg:relative lg:translate-x-0 border-r border-white/5 flex flex-col bg-black">
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-72 lg:w-80 transform -translate-x-full transition-transform duration-300 lg:relative lg:translate-x-0 border-r border-white/5 flex flex-col bg-black">
             <div class="p-6 pb-2">
                 <div class="flex items-center justify-between mb-8">
                     <div class="flex items-center space-x-2 text-white/30">
@@ -127,8 +127,8 @@
                 <div class="w-24 h-24 bg-white/[0.03] rounded-[2rem] flex items-center justify-center mb-10 border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.02)]">
                     <svg class="w-10 h-10 text-white/10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 5v-2M15 5v-2M9 19v2M15 19v2M5 9h-2M5 15h-2M19 9h2M19 15h2M9 9h6v6h-6z"/></svg>
                 </div>
-                <h2 class="text-3xl font-black text-white tracking-[0.6em] mb-4">NEURAL GATEWAY IDLE</h2>
-                <p class="text-[8px] text-white/20 max-w-xs text-center font-black leading-loose tracking-[0.25em]">
+                <h2 class="text-xl sm:text-3xl font-black text-white tracking-[0.2em] sm:tracking-[0.6em] mb-4">NEURAL GATEWAY IDLE</h2>
+                <p class="text-[8px] text-white/20 max-w-xs text-center font-black leading-loose tracking-[0.1em] sm:tracking-[0.25em]">
                     SELECT A CORE INSTANCE FROM THE SIDEBAR TO ESTABLISH A HIGH-BANDWIDTH UPLINK
                 </p>
             </div>

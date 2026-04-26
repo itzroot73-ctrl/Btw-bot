@@ -76,3 +76,13 @@ body {
         padding-right: 1rem !important;
     }
 }
+
+#sidebar {
+    background-color: #000;
+}
+
+@media (max-width: 640px) {
+    #chat-container, #settings-view, #no-bot-selected {
+        padding: 1rem !important;
+    }
+}
