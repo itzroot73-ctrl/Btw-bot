@@ -1,15 +1,30 @@
 const socket = io();
 
+// DOM Elements
 const botForm = document.getElementById('add-bot-form');
 const botsGrid = document.getElementById('bots-grid');
 const categoryFilters = document.getElementById('category-filters');
 const chatWindow = document.getElementById('chat-window');
 const chatInput = document.getElementById('chat-input');
 const sendChatBtn = document.getElementById('send-chat-btn');
+const addBotTrigger = document.getElementById('add-bot-trigger');
+const addBotModal = document.getElementById('add-bot-modal');
+const closeModal = document.getElementById('close-modal');
+const noBotSelected = document.getElementById('no-bot-selected');
+const chatContainer = document.getElementById('chat-container');
+const activeBotName = document.getElementById('active-bot-name');
+const activeBotIp = document.getElementById('active-bot-ip');
+const botStatusIndicator = document.getElementById('bot-status-indicator');
+const removeBotBtn = document.getElementById('remove-bot-btn');
 
 let bots = [];
 let selectedBotId = null;
 let currentFilter = 'all';
+
+// Modal Controls
+addBotTrigger.onclick = () => addBotModal.classList.remove('hidden');
+closeModal.onclick = () => addBotModal.classList.add('hidden');
+addBotModal.onclick = (e) => { if (e.target === addBotModal) addBotModal.classList.add('hidden'); };
 
 // Form Submission
 botForm.addEventListener('submit', (e) => {
@@ -22,6 +37,7 @@ botForm.addEventListener('submit', (e) => {
     };
     socket.emit('add-bot', data);
     botForm.reset();
+    addBotModal.classList.add('hidden');
 });
 
 // Socket Events
@@ -43,6 +59,7 @@ socket.on('bot-status', (updatedBot) => {
         bots[index] = { ...bots[index], ...updatedBot };
         renderBots();
         if (selectedBotId === updatedBot.id) {
+            updateChatHeader();
             updateChatControls();
         }
     }
@@ -63,8 +80,8 @@ socket.on('bot-removed', (botId) => {
     bots = bots.filter(b => b.id !== botId);
     if (selectedBotId === botId) {
         selectedBotId = null;
-        chatWindow.innerHTML = '<p class="placeholder">Select a bot to view chat</p>';
-        updateChatControls();
+        chatContainer.classList.add('hidden');
+        noBotSelected.classList.remove('hidden');
     }
     renderBots();
     renderFilters();
@@ -79,17 +96,13 @@ function renderBots() {
 
     filteredBots.forEach(bot => {
         const div = document.createElement('div');
-        div.className = `bot-card glass ${selectedBotId === bot.id ? 'selected' : ''}`;
+        div.className = `p-4 rounded-xl cursor-pointer transition-all border border-white/5 bot-card-anim ${selectedBotId === bot.id ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-white/5 hover:bg-white/10'}`;
         div.innerHTML = `
-            <div>
-                <span class="bot-status status-${bot.status}"></span>
-                <strong>${bot.username}</strong>
+            <div class="flex items-center justify-between mb-1">
+                <span class="font-bold text-sm truncate">${bot.username}</span>
+                <span class="w-2 h-2 rounded-full status-${bot.status}"></span>
             </div>
-            <div style="font-size: 0.8rem; opacity: 0.7; margin-top: 5px;">
-                ${bot.host}:${bot.port}<br>
-                ${bot.category}
-            </div>
-            <button onclick="removeBot(event, '${bot.id}')" style="margin-top: 10px; background: rgba(239, 68, 68, 0.2); font-size: 0.7rem; padding: 4px;">Remove</button>
+            <div class="text-[10px] text-white/40 font-medium truncate">${bot.host}:${bot.port}</div>
         `;
         div.onclick = () => selectBot(bot.id);
         botsGrid.appendChild(div);
@@ -101,8 +114,8 @@ function renderFilters() {
     categoryFilters.innerHTML = '';
     categories.forEach(cat => {
         const btn = document.createElement('button');
-        btn.className = `filter-btn ${currentFilter === cat ? 'active' : ''}`;
-        btn.textContent = cat.charAt(0).toUpperCase() + cat.slice(1);
+        btn.className = `px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors ${currentFilter === cat ? 'bg-indigo-600 text-white' : 'bg-white/5 text-white/40 hover:bg-white/10'}`;
+        btn.textContent = cat;
         btn.onclick = () => {
             currentFilter = cat;
             renderFilters();
@@ -115,26 +128,47 @@ function renderFilters() {
 function selectBot(botId) {
     selectedBotId = botId;
     const bot = bots.find(b => b.id === botId);
+
+    noBotSelected.classList.add('hidden');
+    chatContainer.classList.remove('hidden');
+
     chatWindow.innerHTML = '';
     bot.messages.forEach(msg => appendChatMessage(msg));
-    if (bot.messages.length === 0) {
-        chatWindow.innerHTML = '<p class="placeholder">No messages yet</p>';
-    }
+
+    updateChatHeader();
     updateChatControls();
     renderBots();
 }
 
-function appendChatMessage(msg) {
-    const placeholder = chatWindow.querySelector('.placeholder');
-    if (placeholder) placeholder.remove();
+function updateChatHeader() {
+    const bot = bots.find(b => b.id === selectedBotId);
+    if (!bot) return;
 
+    activeBotName.textContent = bot.username;
+    activeBotIp.textContent = `${bot.host}:${bot.port}`;
+    botStatusIndicator.className = `w-3 h-3 rounded-full status-${bot.status}`;
+}
+
+function appendChatMessage(msg) {
     const div = document.createElement('div');
-    div.className = 'chat-msg';
-    div.innerHTML = `
-        <span class="time">[${msg.time}]</span>
-        <span class="user">${msg.username}:</span>
-        <span class="text">${msg.message}</span>
-    `;
+    div.className = 'chat-msg flex items-start space-x-2';
+
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'text-white/20 whitespace-nowrap text-[10px] pt-1 leading-none';
+    timeSpan.textContent = msg.time;
+
+    const userSpan = document.createElement('span');
+    userSpan.className = 'text-indigo-400 font-bold whitespace-nowrap leading-tight';
+    userSpan.textContent = `${msg.username}:`;
+
+    const textSpan = document.createElement('span');
+    textSpan.className = 'text-white/80 break-all leading-tight';
+    textSpan.textContent = msg.message;
+
+    div.appendChild(timeSpan);
+    div.appendChild(userSpan);
+    div.appendChild(textSpan);
+
     chatWindow.appendChild(div);
     chatWindow.scrollTop = chatWindow.scrollHeight;
 }
@@ -144,19 +178,14 @@ function updateChatControls() {
     const isOnline = bot && bot.status === 'online';
     chatInput.disabled = !isOnline;
     sendChatBtn.disabled = !isOnline;
-    if (!isOnline) {
-        chatInput.placeholder = bot ? `Bot is ${bot.status}...` : "Select a bot...";
-    } else {
-        chatInput.placeholder = "Type a message...";
-    }
+    chatInput.placeholder = isOnline ? "Transmit command..." : `Unit status: ${bot ? bot.status.toUpperCase() : 'UNKNOWN'}`;
 }
 
-function removeBot(e, botId) {
-    e.stopPropagation();
-    if (confirm('Are you sure you want to remove this bot?')) {
-        socket.emit('remove-bot', botId);
+removeBotBtn.onclick = () => {
+    if (selectedBotId && confirm('Decommission unit?')) {
+        socket.emit('remove-bot', selectedBotId);
     }
-}
+};
 
 // Chat Input
 sendChatBtn.onclick = sendMessage;
