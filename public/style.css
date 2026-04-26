@@ -1,55 +1,57 @@
 :root {
-    --glass-bg: rgba(255, 255, 255, 0.03);
-    --glass-border: rgba(255, 255, 255, 0.08);
+    --nexus-white: #ffffff;
+    --nexus-black: #000000;
 }
 
-.glass {
-    background: var(--glass-bg);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--glass-border);
+body {
+    background-color: var(--nexus-black);
+    color: var(--nexus-white);
+    font-family: 'Inter', sans-serif;
 }
 
 .fira-code { font-family: 'Fira Code', monospace; }
 
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: #444; }
-
-/* Custom Animations */
-@keyframes slideInUp {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+.grid-bg {
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 50px 50px;
 }
 
-.bot-card-anim {
-    animation: slideInUp 0.3s ease-out forwards;
-}
+::-webkit-scrollbar { width: 2px; }
+::-webkit-scrollbar-thumb { background: #111; }
 
-/* Status Colors - Monochrome Inspired */
-.status-online { background-color: #ffffff; box-shadow: 0 0 8px #ffffff; }
-.status-connecting { background-color: #888888; box-shadow: 0 0 8px #888888; }
-.status-offline { background-color: #333333; }
-.status-error { background-color: #ffffff; border: 1px solid #ff0000; box-shadow: 0 0 8px #ff0000; }
-
-.chat-msg {
-    animation: fadeIn 0.2s ease-out;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-/* Elegant Scrollbars and Overlays */
-#bots-grid, #chat-window {
-    scrollbar-gutter: stable;
-}
+/* Status */
+.status-online { background-color: #ffffff; box-shadow: 0 0 10px #ffffff; }
+.status-connecting { background-color: #333333; }
+.status-offline { background-color: #111111; }
+.status-error { background-color: #ffffff; border: 1px solid #ff0000; box-shadow: 0 0 10px #ff0000; }
 
 #chat-window {
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 1rem;
-    padding: 1.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    mask-image: linear-gradient(to bottom, transparent, black 100px);
+}
+
+.chat-msg {
+    border-left: 2px solid rgba(255,255,255,0.02);
+    padding-left: 1.5rem;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.filter-btn {
+    color: rgba(255, 255, 255, 0.2);
+    transition: all 0.3s;
+    border-bottom: 2px solid transparent;
+    padding-bottom: 4px;
+}
+
+.filter-btn.active {
+    color: white;
+    border-bottom: 2px solid white;
 }
