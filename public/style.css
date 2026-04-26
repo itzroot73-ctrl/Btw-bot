@@ -1,9 +1,6 @@
 :root {
-    --glass-bg: rgba(61, 43, 31, 0.2);
-    --glass-border: rgba(188, 138, 95, 0.15);
-    --primary-brown: #8b5e34;
-    --light-brown: #bc8a5f;
-    --cream: #f5ebe0;
+    --glass-bg: rgba(255, 255, 255, 0.03);
+    --glass-border: rgba(255, 255, 255, 0.08);
 }
 
 .glass {
@@ -17,8 +14,8 @@
 
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #3d2b1f; border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: #5a4030; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #444; }
 
 /* Custom Animations */
 @keyframes slideInUp {
@@ -30,11 +27,11 @@
     animation: slideInUp 0.3s ease-out forwards;
 }
 
-/* Status Colors */
-.status-online { background-color: #10b981; box-shadow: 0 0 8px #10b981; }
-.status-connecting { background-color: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
-.status-offline { background-color: #6b7280; }
-.status-error { background-color: #ef4444; box-shadow: 0 0 8px #ef4444; }
+/* Status Colors - Monochrome Inspired */
+.status-online { background-color: #ffffff; box-shadow: 0 0 8px #ffffff; }
+.status-connecting { background-color: #888888; box-shadow: 0 0 8px #888888; }
+.status-offline { background-color: #333333; }
+.status-error { background-color: #ffffff; border: 1px solid #ff0000; box-shadow: 0 0 8px #ff0000; }
 
 .chat-msg {
     animation: fadeIn 0.2s ease-out;
@@ -51,8 +48,8 @@
 }
 
 #chat-window {
-    background: rgba(26, 15, 10, 0.4);
+    background: rgba(255, 255, 255, 0.02);
     border-radius: 1rem;
     padding: 1.5rem;
-    border: 1px solid rgba(139, 94, 52, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }

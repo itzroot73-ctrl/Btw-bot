@@ -10,15 +10,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-[#1a0f0a] text-[#f5ebe0] overflow-hidden h-screen flex flex-col">
+<body class="bg-[#000000] text-white overflow-hidden h-screen flex flex-col">
     <!-- Header -->
-    <header class="h-16 glass flex items-center justify-between px-6 z-10 border-b border-[#3d2b1f]">
+    <header class="h-16 glass flex items-center justify-between px-6 z-10 border-b border-white/10">
         <div class="flex items-center space-x-3">
-            <div class="w-8 h-8 bg-[#8b5e34] rounded-lg flex items-center justify-center font-bold shadow-lg shadow-[#8b5e34]/20 text-[#f5ebe0]">A</div>
-            <h1 class="text-xl font-semibold tracking-tight">Aether <span class="text-[#bc8a5f] font-bold">Nexus</span></h1>
+            <div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center font-bold text-black shadow-lg shadow-white/10">A</div>
+            <h1 class="text-xl font-semibold tracking-tight">Aether <span class="text-gray-400 font-bold">Nexus</span></h1>
         </div>
         <div class="flex items-center space-x-4">
-            <button id="add-bot-trigger" class="bg-[#8b5e34] hover:bg-[#a47148] px-4 py-2 rounded-md text-sm font-medium transition-all shadow-md shadow-[#8b5e34]/20">Add Bot Bot</button>
+            <button id="add-bot-trigger" class="bg-white hover:bg-gray-200 text-black px-4 py-2 rounded-md text-sm font-bold transition-all shadow-md shadow-white/10">Add Bot Unit</button>
         </div>
     </header>
 
@@ -39,11 +39,11 @@
         <main class="flex-1 flex flex-col relative bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]">
             <div id="no-bot-selected" class="absolute inset-0 flex flex-center items-center justify-center z-0">
                 <div class="text-center">
-                    <div class="w-20 h-20 bg-[#8b5e34]/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-[#8b5e34]/20">
-                        <svg class="w-10 h-10 text-[#8b5e34]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    <div class="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/10">
+                        <svg class="w-10 h-10 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                     </div>
-                    <h2 class="text-2xl font-bold text-[#bc8a5f]/40">Select a Bot to Interact</h2>
-                    <p class="text-[#bc8a5f]/20">Manage your Minecraft fleet from a single interface</p>
+                    <h2 class="text-2xl font-bold text-white/40 uppercase tracking-widest">Select Bot</h2>
+                    <p class="text-white/20 text-sm">Awaiting unit selection for command relay</p>
                 </div>
             </div>
 
@@ -65,7 +65,7 @@
 
                 <div class="flex items-center space-x-3">
                     <input type="text" id="chat-input" placeholder="Enter command or message..." class="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-indigo-500/50 transition-colors fira-code" disabled>
-                    <button id="send-chat-btn" class="bg-[#8b5e34] hover:bg-[#a47148] w-12 h-12 flex items-center justify-center rounded-xl transition-all disabled:opacity-30 shadow-md shadow-[#8b5e34]/20" disabled>
+                    <button id="send-chat-btn" class="bg-white hover:bg-gray-200 text-black w-12 h-12 flex items-center justify-center rounded-xl transition-all disabled:opacity-30 shadow-md shadow-white/10" disabled>
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
                     </button>
                 </div>
@@ -99,7 +99,7 @@
                     <label class="block text-xs font-bold uppercase tracking-widest text-white/40 mb-2">Operation Group</label>
                     <input type="text" id="category" placeholder="Surveillance" class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 outline-none focus:border-indigo-500/50 transition-colors">
                 </div>
-                <button type="submit" class="w-full bg-[#8b5e34] hover:bg-[#a47148] py-4 rounded-lg font-bold text-lg mt-4 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-[#8b5e34]/20">Initialize Deployment</button>
+                <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black py-4 rounded-lg font-bold text-lg mt-4 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-white/10 uppercase tracking-widest">Authorize Deployment</button>
             </form>
         </div>
     </div>

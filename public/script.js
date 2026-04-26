@@ -96,13 +96,13 @@ function renderBots() {
 
     filteredBots.forEach(bot => {
         const div = document.createElement('div');
-        div.className = `p-4 rounded-xl cursor-pointer transition-all border border-[#bc8a5f]/10 bot-card-anim ${selectedBotId === bot.id ? 'bg-[#8b5e34]/20 border-[#8b5e34]/40' : 'bg-[#3d2b1f]/20 hover:bg-[#3d2b1f]/40'}`;
+        div.className = `p-4 rounded-xl cursor-pointer transition-all border border-white/5 bot-card-anim ${selectedBotId === bot.id ? 'bg-white/10 border-white/20' : 'bg-white/5 hover:bg-white/10'}`;
         div.innerHTML = `
             <div class="flex items-center justify-between mb-1">
-                <span class="font-bold text-sm truncate text-[#f5ebe0]">${bot.username}</span>
+                <span class="font-bold text-sm truncate text-white">${bot.username}</span>
                 <span class="w-2 h-2 rounded-full status-${bot.status}"></span>
             </div>
-            <div class="text-[10px] text-[#bc8a5f]/60 font-medium truncate">${bot.host}:${bot.port}</div>
+            <div class="text-[10px] text-white/40 font-medium truncate">${bot.host}:${bot.port}</div>
         `;
         div.onclick = () => selectBot(bot.id);
         botsGrid.appendChild(div);
@@ -114,7 +114,7 @@ function renderFilters() {
     categoryFilters.innerHTML = '';
     categories.forEach(cat => {
         const btn = document.createElement('button');
-        btn.className = `px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors ${currentFilter === cat ? 'bg-[#8b5e34] text-[#f5ebe0]' : 'bg-[#3d2b1f]/40 text-[#bc8a5f]/60 hover:bg-[#3d2b1f]/60'}`;
+        btn.className = `px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors ${currentFilter === cat ? 'bg-white text-black' : 'bg-white/5 text-white/40 hover:bg-white/10'}`;
         btn.textContent = cat;
         btn.onclick = () => {
             currentFilter = cat;
@@ -151,18 +151,18 @@ function updateChatHeader() {
 
 function appendChatMessage(msg) {
     const div = document.createElement('div');
-    div.className = 'chat-msg flex items-start space-x-3 py-1 border-b border-[#bc8a5f]/5 last:border-0';
+    div.className = 'chat-msg flex items-start space-x-3 py-1 border-b border-white/5 last:border-0';
 
     const timeSpan = document.createElement('span');
-    timeSpan.className = 'text-[#bc8a5f]/30 whitespace-nowrap text-[10px] pt-1 leading-none fira-code';
+    timeSpan.className = 'text-white/20 whitespace-nowrap text-[10px] pt-1 leading-none fira-code';
     timeSpan.textContent = msg.time;
 
     const userSpan = document.createElement('span');
-    userSpan.className = 'text-[#bc8a5f] font-bold whitespace-nowrap leading-tight';
+    userSpan.className = 'text-white font-bold whitespace-nowrap leading-tight';
     userSpan.textContent = `${msg.username}:`;
 
     const textSpan = document.createElement('span');
-    textSpan.className = 'text-[#f5ebe0]/90 break-all leading-tight';
+    textSpan.className = 'text-white/70 break-all leading-tight';
     textSpan.textContent = msg.message;
 
     div.appendChild(timeSpan);
