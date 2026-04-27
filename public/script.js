@@ -1,557 +1,221 @@
+const socket = io();
+let bots = [];
+let selectedBotId = null;
+
 // DOM Elements
-const botForm = document.getElementById('add-bot-form');
 const botsGrid = document.getElementById('bots-grid');
+const botCount = document.getElementById('bot-count');
 const chatWindow = document.getElementById('chat-window');
 const chatInput = document.getElementById('chat-input');
 const sendChatBtn = document.getElementById('send-chat-btn');
-const addBotTrigger = document.getElementById('add-bot-trigger');
-const addBotModal = document.getElementById('add-bot-modal');
-const closeModal = document.getElementById('close-modal');
 const noBotSelected = document.getElementById('no-bot-selected');
-const chatContainer = document.getElementById('chat-container');
-const activeBotName = document.getElementById('active-bot-name');
-const activeBotIp = document.getElementById('active-bot-ip');
-const botStatusIndicator = document.getElementById('bot-status-indicator');
-const removeBotBtn = document.getElementById('remove-bot-btn');
-const botCount = document.getElementById('bot-count');
-const emptySidebar = document.getElementById('empty-sidebar');
-const categoryFilters = document.getElementById('category-filters');
+const activeInterface = document.getElementById('active-interface');
 
-// Settings Elements
-const settingsTrigger = document.getElementById('settings-trigger');
-const settingsView = document.getElementById('settings-view');
-const closeSettings = document.getElementById('close-settings');
-const addNodeForm = document.getElementById('add-node-form');
-const nodesList = document.getElementById('nodes-list');
-const botNodeSelect = document.getElementById('bot-node');
-const activeInstancesCount = document.getElementById('active-instances-count');
-const registeredNodesCount = document.getElementById('registered-nodes-count');
-const apiEndpointInput = document.getElementById('api-endpoint');
-const saveEndpointBtn = document.getElementById('save-endpoint');
-const connectionStatus = document.getElementById('connection-status');
-const mapCanvas = document.getElementById('map-canvas');
-const mapStatus = document.getElementById('map-status');
-const refreshMapBtn = document.getElementById('refresh-map');
+const addBotBtn = document.getElementById('add-bot-btn');
+const addBotModal = document.getElementById('add-bot-modal');
+const closeBotModal = document.getElementById('close-modal');
+const addBotForm = document.getElementById('add-bot-form');
 
-let socket;
-let bots = [];
-let nodes = [];
-let selectedBotId = null;
-let currentCategory = 'ALL';
+const nexusHub = document.getElementById('nexus-hub');
+const closeHub = document.getElementById('close-hub');
+const tabBtns = document.querySelectorAll('.tab-btn');
+const tabContents = document.querySelectorAll('.tab-content');
 
-// --- UI EVENT LISTENERS (ALWAYS ENABLED) ---
+// --- HUB LOGIC ---
 
-// Modal Controls
-addBotTrigger.onclick = () => {
-    addBotModal.classList.remove('hidden');
-};
-closeModal.onclick = () => addBotModal.classList.add('hidden');
-addBotModal.onclick = (e) => { if (e.target === addBotModal) addBotModal.classList.add('hidden'); };
-
-// Settings Navigation
-settingsTrigger.onclick = () => {
-    settingsView.classList.remove('hidden');
-};
-closeSettings.onclick = () => settingsView.classList.add('hidden');
-
-// --- SOCKET LOGIC ---
-
-function connectToSocket(url = '') {
-    console.log(`Connecting to Nexus Core: ${url || 'Local'}`);
-    if (socket) socket.disconnect();
-
-    try {
-        if (typeof io === 'undefined') {
-            console.error('Socket.io library not loaded. UI will remain active but offline.');
-            return;
-        }
-
-        socket = url ? io(url) : io();
-        setupSocketHandlers();
-    } catch (e) {
-        console.error('Failed to initialize socket:', e);
-    }
-}
-
-function setupSocketHandlers() {
-    socket.on('connect', () => {
-        console.log('Connected to Nexus Core');
-        connectionStatus.textContent = 'ONLINE';
-        connectionStatus.className = 'absolute right-5 top-1/2 -translate-y-1/2 text-[6px] font-black tracking-widest text-green-500';
-    });
-
-    socket.on('disconnect', () => {
-        connectionStatus.textContent = 'OFFLINE';
-        connectionStatus.className = 'absolute right-5 top-1/2 -translate-y-1/2 text-[6px] font-black tracking-widest text-white/20';
-    });
-
-    socket.on('connect_error', (err) => {
-        console.error('Connection Error:', err.message);
-        connectionStatus.textContent = 'ERROR';
-        connectionStatus.className = 'absolute right-5 top-1/2 -translate-y-1/2 text-[6px] font-black tracking-widest text-red-500';
-    });
-
-    socket.on('bots-list', (botList) => {
-        bots = botList;
-        updateCategoryFilters();
-        updateSidebar();
-        activeInstancesCount.textContent = bots.length;
-    });
-
-    socket.on('nodes-list', (nodeList) => {
-        nodes = nodeList;
-        updateNodesUI();
-        registeredNodesCount.textContent = nodes.length;
-    });
-
-    socket.on('bot-added', (bot) => {
-        bots.push(bot);
-        updateCategoryFilters();
-        updateSidebar();
-        activeInstancesCount.textContent = bots.length;
-    });
-
-    socket.on('bot-status', (updatedBot) => {
-        const index = bots.findIndex(b => b.id === updatedBot.id);
-        if (index !== -1) {
-            bots[index] = { ...bots[index], ...updatedBot };
-            updateSidebar();
-            if (selectedBotId === updatedBot.id) {
-                updateChatHeader();
-                updateChatControls();
-            }
-        }
-    });
-
-    socket.on('bot-chat', ({ botId, msg }) => {
-        const bot = bots.find(b => b.id === botId);
-        if (bot) {
-            bot.messages.push(msg);
-            if (bot.messages.length > 100) bot.messages.shift();
-            if (selectedBotId === botId) {
-                appendChatMessage(msg);
-            }
-        }
-    });
-
-    socket.on('bot-map', ({ botId, colors }) => {
-        const bot = bots.find(b => b.id === botId);
-        if (bot) {
-            bot.mapData = colors;
-            if (selectedBotId === botId) {
-                renderMap(colors);
-            }
-        }
-    });
-
-    socket.on('bot-removed', (botId) => {
-        bots = bots.filter(b => b.id !== botId);
-        if (selectedBotId === botId) {
-            selectedBotId = null;
-            chatContainer.classList.add('hidden', 'opacity-0');
-            noBotSelected.classList.remove('hidden', 'opacity-0');
-        }
-        updateCategoryFilters();
-        updateSidebar();
-        activeInstancesCount.textContent = bots.length;
-    });
-}
-
-// Initial Connection
-const savedEndpoint = localStorage.getItem('nexus-api-endpoint');
-if (savedEndpoint) {
-    apiEndpointInput.value = savedEndpoint;
-    connectToSocket(savedEndpoint);
-} else {
-    connectToSocket();
-}
-
-saveEndpointBtn.onclick = () => {
-    const url = apiEndpointInput.value.trim();
-    if (url) {
-        localStorage.setItem('nexus-api-endpoint', url);
-        connectToSocket(url);
-        alert('REMOTE CONNECTION ESTABLISHED');
+function toggleHub() {
+    if (!selectedBotId) return;
+    if (nexusHub.classList.contains('hidden')) {
+        syncHubUI();
+        nexusHub.classList.remove('hidden');
+        setTimeout(() => nexusHub.classList.add('active', 'opacity-100'), 10);
     } else {
-        localStorage.removeItem('nexus-api-endpoint');
-        location.reload();
+        nexusHub.classList.remove('active', 'opacity-100');
+        setTimeout(() => nexusHub.classList.add('hidden'), 400);
     }
-};
+}
 
-// Form Submissions
-botForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    if (!socket || !socket.connected) {
-        alert('UPLINK DISCONNECTED. CANNOT INITIALIZE DEPLOYMENT.');
-        return;
-    }
-    const data = {
-        username: document.getElementById('username').value,
-        host: (document.getElementById('host').value || 'PLAY.BANANASMP.NET'),
-        port: parseInt(document.getElementById('port').value) || 25565,
-        category: (document.getElementById('category').value || 'NEURAL_GRID').toUpperCase(),
-        nodeId: document.getElementById('bot-node').value
+// Tab Switching
+tabBtns.forEach(btn => {
+    btn.onclick = () => {
+        tabBtns.forEach(b => b.classList.remove('active-tab'));
+        tabContents.forEach(c => c.classList.add('hidden'));
+        btn.classList.add('active-tab');
+        document.getElementById(`tab-${btn.dataset.tab}`).classList.remove('hidden');
     };
-    socket.emit('add-bot', data);
-    botForm.reset();
-    addBotModal.classList.add('hidden');
 });
 
-addNodeForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    if (!socket || !socket.connected) {
-        alert('UPLINK DISCONNECTED. CANNOT REGISTER NODE.');
-        return;
-    }
-    const data = {
-        name: document.getElementById('node-name').value.toUpperCase(),
-        ip: document.getElementById('node-ip').value
-    };
-    socket.emit('add-node', data);
-    addNodeForm.reset();
+// Keybinds
+window.addEventListener('keydown', (e) => {
+    if (e.code === 'ShiftRight') { e.preventDefault(); toggleHub(); }
+    if (e.code === 'KeyR' && selectedBotId) { toggleSetting('killauraEnabled'); }
+    if (e.code === 'KeyG' && selectedBotId) { toggleSetting('espEnabled'); }
+    if (e.code === 'KeyD' && selectedBotId) { toggleSetting('triggerbotEnabled'); }
 });
 
-// Rendering Functions
-function updateNodesUI() {
-    nodesList.innerHTML = '';
-    botNodeSelect.innerHTML = '<option value="CORE_LOCAL">CORE_LOCAL (DEFAULT)</option>';
-
-    nodes.forEach(node => {
-        const div = document.createElement('div');
-        div.className = 'bg-white/[0.01] border border-white/5 rounded-xl p-4 flex items-center justify-between group';
-
-        const info = document.createElement('div');
-        const header = document.createElement('div');
-        header.className = 'flex items-center space-x-2 mb-1';
-
-        const statusDot = document.createElement('span');
-        statusDot.className = `w-1 h-1 rounded-full status-${node.status}`;
-
-        const name = document.createElement('span');
-        name.className = 'text-[9px] font-black tracking-widest';
-        name.textContent = node.name;
-
-        header.appendChild(statusDot);
-        header.appendChild(name);
-
-        const details = document.createElement('div');
-        details.className = 'text-[7px] text-white/20 font-black flex items-center space-x-3';
-        details.innerHTML = `<span>IP: ${node.ip}</span> <span class="text-white/40">UNITS: ${node.botCount || 0}</span>`;
-
-        info.appendChild(header);
-        info.appendChild(details);
-
-        const actions = document.createElement('div');
-        actions.className = 'flex items-center space-x-3 opacity-0 group-hover:opacity-100 transition-opacity';
-
-        const pingBtn = document.createElement('button');
-        pingBtn.className = 'text-white/10 hover:text-white transition-colors';
-        pingBtn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>';
-        pingBtn.title = 'RE-SCAN NODE';
-        pingBtn.onclick = () => socket.emit('ping-node', node.id);
-
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'text-white/10 hover:text-red-500 transition-colors';
-        removeBtn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>';
-        removeBtn.onclick = () => { if(confirm('DECOMMISSION NODE?')) socket.emit('remove-node', node.id); };
-
-        actions.appendChild(pingBtn);
-        actions.appendChild(removeBtn);
-        div.appendChild(info);
-        div.appendChild(actions);
-        nodesList.appendChild(div);
-
-        const option = document.createElement('option');
-        option.value = node.id;
-        option.textContent = node.name;
-        botNodeSelect.appendChild(option);
-    });
-}
-
-function updateCategoryFilters() {
-    const categories = ['ALL', ...new Set(bots.map(b => b.category))];
-    categoryFilters.innerHTML = '';
-    categories.forEach(cat => {
-        const btn = document.createElement('button');
-        btn.className = `filter-btn text-[7px] font-black tracking-[0.2em] whitespace-nowrap ${currentCategory === cat ? 'active' : ''}`;
-        btn.textContent = cat;
-        btn.onclick = () => {
-            currentCategory = cat;
-            updateCategoryFilters();
-            updateSidebar();
-        };
-        categoryFilters.appendChild(btn);
-    });
-}
-
-function updateSidebar() {
-    botCount.textContent = bots.length;
-
-    const filteredBots = currentCategory === 'ALL'
-        ? bots
-        : bots.filter(b => b.category === currentCategory);
-
-    if (filteredBots.length === 0) {
-        emptySidebar.classList.remove('hidden');
-    } else {
-        emptySidebar.classList.add('hidden');
-    }
-
-    const existingCards = botsGrid.querySelectorAll('.bot-card');
-    existingCards.forEach(c => c.remove());
-
-    filteredBots.forEach(bot => {
-        const div = document.createElement('div');
-        div.className = `bot-card p-5 rounded-xl cursor-pointer transition-all border ${selectedBotId === bot.id ? 'border-white/20 bg-white/[0.05]' : 'border-white/5 bg-white/[0.01] hover:bg-white/[0.03]'}`;
-
-        const header = document.createElement('div');
-        header.className = 'flex items-center justify-between mb-2';
-
-        const nameSpan = document.createElement('span');
-        nameSpan.className = 'font-black text-[10px] truncate tracking-[0.1em] text-white';
-        nameSpan.textContent = bot.username;
-
-        const statusSpan = document.createElement('span');
-        statusSpan.className = `w-1.5 h-1.5 rounded-full status-${bot.status}`;
-
-        header.appendChild(nameSpan);
-        header.appendChild(statusSpan);
-
-        const infoDiv = document.createElement('div');
-        infoDiv.className = 'flex justify-between items-center';
-
-        const ipSpan = document.createElement('span');
-        ipSpan.className = 'text-[8px] text-white/20 font-black tracking-[0.2em] truncate';
-        ipSpan.textContent = `${bot.host}:${bot.port}`;
-
-        const nodeSpan = document.createElement('span');
-        nodeSpan.className = 'text-[6px] text-white/10 font-black border border-white/5 px-1.5 py-0.5 rounded';
-        const nodeName = nodes.find(n => n.id === bot.nodeId)?.name || 'CORE_LOCAL';
-        nodeSpan.textContent = nodeName;
-
-        infoDiv.appendChild(ipSpan);
-        infoDiv.appendChild(nodeSpan);
-
-        div.appendChild(header);
-        div.appendChild(infoDiv);
-
-        div.onclick = () => selectBot(bot.id);
-        botsGrid.appendChild(div);
-    });
-}
-
-function selectBot(botId) {
-    selectedBotId = botId;
-    const bot = bots.find(b => b.id === botId);
-
-    noBotSelected.classList.add('opacity-0');
-    setTimeout(() => {
-        noBotSelected.classList.add('hidden');
-        chatContainer.classList.remove('hidden');
-        setTimeout(() => chatContainer.classList.add('opacity-100'), 50);
-    }, 500);
-
-    chatWindow.innerHTML = '';
-    bot.messages.forEach(msg => appendChatMessage(msg));
-
-    if (bot.mapData) {
-        renderMap(bot.mapData);
-    } else {
-        clearMap();
-    }
-
-    updateChatHeader();
-    updateChatControls();
-    updateSidebar();
-}
-
-// --- MAP RENDERING ---
-
-const MAP_PALETTE = [
-    [0, 0, 0], [127, 178, 56], [247, 233, 163], [199, 199, 199], [255, 0, 0], [160, 160, 255], [167, 167, 167], [0, 124, 0],
-    [255, 255, 255], [164, 168, 184], [151, 109, 77], [112, 112, 112], [64, 64, 255], [143, 119, 72], [255, 252, 245], [216, 127, 51],
-    [178, 76, 216], [102, 153, 216], [229, 229, 51], [127, 204, 25], [242, 127, 165], [76, 76, 76], [153, 153, 153], [76, 127, 153],
-    [127, 63, 178], [51, 76, 178], [102, 76, 51], [102, 127, 51], [153, 51, 51], [25, 25, 25], [250, 238, 77], [92, 219, 213],
-    [74, 128, 255], [0, 217, 58], [129, 62, 19], [112, 2, 0], [209, 177, 161], [197, 119, 50], [164, 75, 196], [100, 152, 215],
-    [228, 228, 50], [126, 203, 24], [241, 126, 164], [75, 75, 75], [152, 152, 152], [75, 126, 152], [126, 62, 177], [50, 75, 177],
-    [101, 75, 50], [101, 126, 50], [152, 50, 50], [24, 24, 24], [255, 255, 255] // Simplified palette
-];
-
-function renderMap(colors) {
-    const ctx = mapCanvas.getContext('2d');
-    const imageData = ctx.createImageData(128, 128);
-
-    for (let i = 0; i < colors.length; i++) {
-        const colorId = colors[i];
-        const baseColorId = Math.floor(colorId / 4);
-        const shade = colorId % 4;
-
-        let rgb = MAP_PALETTE[baseColorId] || [0, 0, 0];
-
-        // Apply shading (Minecraft map shading logic: 180, 220, 255, 135)
-        const mult = [180/255, 220/255, 1.0, 135/255][shade];
-
-        imageData.data[i * 4] = rgb[0] * mult;
-        imageData.data[i * 4 + 1] = rgb[1] * mult;
-        imageData.data[i * 4 + 2] = rgb[2] * mult;
-        imageData.data[i * 4 + 3] = 255;
-    }
-
-    ctx.putImageData(imageData, 0, 0);
-    mapStatus.textContent = 'SYNCED';
-    mapStatus.classList.remove('text-white/10');
-    mapStatus.classList.add('text-green-500');
-
-    mapCanvas.classList.remove('grayscale', 'opacity-50');
-}
-
-function clearMap() {
-    const ctx = mapCanvas.getContext('2d');
-    ctx.clearRect(0, 0, 128, 128);
-    mapStatus.textContent = 'STALE';
-    mapStatus.classList.add('text-white/10');
-    mapStatus.classList.remove('text-green-500');
-    mapCanvas.classList.add('grayscale', 'opacity-50');
-}
-
-refreshMapBtn.onclick = () => {
-    mapStatus.textContent = 'POLLING...';
-    // Request fresh map data if needed, or just visual feedback
-    setTimeout(() => {
-        const bot = bots.find(b => b.id === selectedBotId);
-        if (bot && bot.mapData) renderMap(bot.mapData);
-        else clearMap();
-    }, 500);
-};
-
-function updateChatHeader() {
+function toggleSetting(key) {
     const bot = bots.find(b => b.id === selectedBotId);
     if (!bot) return;
-
-    activeBotName.textContent = bot.username;
-    activeBotIp.textContent = `UPLINK: ${bot.host}:${bot.port}`;
-    botStatusIndicator.className = `w-2 h-2 rounded-full status-${bot.status}`;
+    const newSettings = { ...bot.settings, [key]: !bot.settings[key] };
+    updateBotSettings(newSettings);
 }
 
-function appendChatMessage(msg) {
-    const div = document.createElement('div');
-    div.className = 'chat-msg flex items-start space-x-6';
-
-    const timeSpan = document.createElement('span');
-    timeSpan.className = 'text-white/10 whitespace-nowrap text-[9px] pt-1 font-black';
-    timeSpan.textContent = msg.time;
-
-    const userSpan = document.createElement('span');
-    userSpan.className = 'text-white/30 font-black whitespace-nowrap text-[10px]';
-    userSpan.textContent = `${msg.username}:`;
-
-    const textSpan = document.createElement('span');
-    textSpan.className = 'text-white/70 break-all';
-    textSpan.textContent = msg.message;
-
-    div.appendChild(timeSpan);
-    div.appendChild(userSpan);
-    div.appendChild(textSpan);
-
-    chatWindow.appendChild(div);
-    chatWindow.scrollTop = chatWindow.scrollHeight;
-}
-
-function updateChatControls() {
+// Sync UI with Bot Data
+function syncHubUI() {
     const bot = bots.find(b => b.id === selectedBotId);
-    const isOnline = bot && bot.status === 'online';
-    chatInput.disabled = !isOnline;
-    sendChatBtn.disabled = !isOnline;
-    chatInput.placeholder = isOnline ? "AUTHORIZE COMMAND EXECUTION..." : `UNIT STATUS: ${bot ? bot.status.toUpperCase() : 'UNKNOWN'}`;
+    if (!bot || !bot.settings) return;
+
+    const s = bot.settings;
+    document.getElementById('killaura-toggle').checked = s.killauraEnabled;
+    document.getElementById('killaura-range').value = s.killauraRange;
+    document.getElementById('range-val').textContent = `${s.killauraRange}M`;
+    document.getElementById('triggerbot-toggle').checked = s.triggerbotEnabled;
+    document.getElementById('aimassist-toggle').checked = s.aimassistEnabled;
+    document.getElementById('esp-toggle').checked = s.espEnabled;
+    document.getElementById('autoeat-toggle').checked = s.autoeatEnabled;
+    document.getElementById('autoarmor-toggle').checked = s.autoarmorEnabled;
+    document.getElementById('autosprint-toggle').checked = s.autosprintEnabled;
 }
 
-removeBotBtn.onclick = () => {
-    if (selectedBotId && confirm('DECOMMISSION UNIT?')) {
-        socket.emit('remove-bot', selectedBotId);
-    }
-};
-
-// Chat Input
-sendChatBtn.onclick = sendMessage;
-chatInput.onkeypress = (e) => {
-    if (e.key === 'Enter') sendMessage();
-};
-
-function sendMessage() {
-    const message = chatInput.value.trim();
-    if (message && selectedBotId) {
-        socket.emit('send-chat', { botId: selectedBotId, message });
-        chatInput.value = '';
-    }
-}
-
-// --- COMBAT SETTINGS LOGIC ---
-
-const combatModal = document.getElementById('combat-modal');
-const closeCombatModalBtn = document.getElementById('close-combat-modal');
-const kaEnabled = document.getElementById('ka-enabled');
-const kaRange = document.getElementById('ka-range');
-const kaRangeVal = document.getElementById('ka-range-val');
-const kaSpeed = document.getElementById('ka-speed');
-const kaSpeedVal = document.getElementById('ka-speed-val');
-
-function toggleCombatModal() {
-    if (!selectedBotId) return;
-
-    if (combatModal.classList.contains('hidden')) {
-        // Load current bot settings
-        const bot = bots.find(b => b.id === selectedBotId);
-        if (bot && bot.settings) {
-            kaEnabled.checked = bot.settings.killauraEnabled || false;
-            kaRange.value = bot.settings.killauraRange || 3.8;
-            kaRangeVal.innerHTML = `${kaRange.value}<span class="text-[10px] text-white/20 ml-1">M</span>`;
-            kaSpeed.value = bot.settings.killauraSpeed || 10;
-            kaSpeedVal.innerHTML = `${kaSpeed.value}<span class="text-[10px] text-white/20 ml-1">APS</span>`;
-        }
-
-        combatModal.classList.remove('hidden');
-        setTimeout(() => combatModal.classList.add('active'), 10);
-    } else {
-        combatModal.classList.remove('active');
-        setTimeout(() => combatModal.classList.add('hidden'), 500);
-    }
-}
-
-// Right Shift Keybind
-window.addEventListener('keydown', (e) => {
-    if (e.code === 'ShiftRight') {
-        e.preventDefault();
-        toggleCombatModal();
-    }
-});
-
-closeCombatModalBtn.onclick = toggleCombatModal;
-
-// Update UI and Emit Settings
-function updateBotCombatSettings() {
-    if (!selectedBotId) return;
-
-    const settings = {
-        killauraEnabled: kaEnabled.checked,
-        killauraRange: parseFloat(kaRange.value),
-        killauraSpeed: parseInt(kaSpeed.value)
-    };
-
-    kaRangeVal.innerHTML = `${settings.killauraRange}<span class="text-[10px] text-white/20 ml-1">M</span>`;
-    kaSpeedVal.innerHTML = `${settings.killauraSpeed}<span class="text-[10px] text-white/20 ml-1">APS</span>`;
-
+function updateBotSettings(settings) {
     socket.emit('update-bot-settings', { botId: selectedBotId, settings });
 }
 
-kaEnabled.onchange = updateBotCombatSettings;
-kaRange.oninput = updateBotCombatSettings;
-kaSpeed.oninput = updateBotCombatSettings;
+// Attach Input Listeners
+document.getElementById('killaura-toggle').onchange = (e) => updateBotSettings({ killauraEnabled: e.target.checked });
+document.getElementById('killaura-range').oninput = (e) => {
+    document.getElementById('range-val').textContent = `${e.target.value}M`;
+    updateBotSettings({ killauraRange: parseFloat(e.target.value) });
+};
+document.getElementById('triggerbot-toggle').onchange = (e) => updateBotSettings({ triggerbotEnabled: e.target.checked });
+document.getElementById('aimassist-toggle').onchange = (e) => updateBotSettings({ aimassistEnabled: e.target.checked });
+document.getElementById('esp-toggle').onchange = (e) => updateBotSettings({ espEnabled: e.target.checked });
+document.getElementById('autoeat-toggle').onchange = (e) => updateBotSettings({ autoeatEnabled: e.target.checked });
+document.getElementById('autoarmor-toggle').onchange = (e) => updateBotSettings({ autoarmorEnabled: e.target.checked });
+document.getElementById('autosprint-toggle').onchange = (e) => updateBotSettings({ autosprintEnabled: e.target.checked });
 
-// Listen for updates from server
+closeHub.onclick = toggleHub;
+
+// --- CORE PANEL LOGIC ---
+
+socket.on('bot-added', (bot) => {
+    bots.push({ ...bot, messages: [], status: 'deploying', settings: bot.settings || {} });
+    updateSidebar();
+});
+
+socket.on('bot-status', (data) => {
+    const bot = bots.find(b => b.id === data.botId);
+    if (bot) {
+        bot.status = data.status;
+        if (selectedBotId === bot.id) updateBotHeader();
+        updateSidebar();
+    }
+});
+
+socket.on('bot-chat', (data) => {
+    const bot = bots.find(b => b.id === data.botId);
+    if (bot) {
+        bot.messages.push(data.msg);
+        if (selectedBotId === bot.id) appendChat(data.msg);
+    }
+});
+
 socket.on('bot-settings-updated', (data) => {
     const bot = bots.find(b => b.id === data.botId);
     if (bot) {
         bot.settings = data.settings;
-        // Optionally show a "Synced" toast or indicator
+        if (selectedBotId === bot.id) syncHubUI();
     }
 });
+
+socket.on('relay-esp-data', (data) => {
+    if (selectedBotId === data.botId) renderESP(data.entities);
+});
+
+function renderESP(entities) {
+    const espList = document.getElementById('esp-list');
+    const header = espList.querySelector('h3');
+    espList.innerHTML = '';
+    espList.appendChild(header);
+
+    entities.forEach(e => {
+        const div = document.createElement('div');
+        div.className = 'bg-white/[0.02] border border-white/5 p-3 rounded-xl flex justify-between items-center';
+        div.innerHTML = `
+            <div>
+                <p class="text-[9px] font-black tracking-widest text-white/80 uppercase">${e.name || e.type}</p>
+                <p class="text-[6px] text-white/20 font-black tracking-widest uppercase mt-1">${e.type} // DIST: ${e.dist.toFixed(1)}M</p>
+            </div>
+            <div class="w-1 h-1 rounded-full bg-white/20"></div>
+        `;
+        espList.appendChild(div);
+    });
+}
+
+function updateSidebar() {
+    botsGrid.innerHTML = '';
+    botCount.textContent = bots.length.toString().padStart(2, '0');
+    bots.forEach(bot => {
+        const card = document.createElement('div');
+        card.className = `bot-card p-6 border border-white/5 rounded-2xl cursor-pointer ${selectedBotId === bot.id ? 'active' : ''}`;
+        card.innerHTML = `
+            <div class="flex justify-between items-center">
+                <span class="text-[10px] font-black tracking-widest uppercase">${bot.username}</span>
+                <div class="w-1.5 h-1.5 rounded-full status-${bot.status}"></div>
+            </div>
+        `;
+        card.onclick = () => selectBot(bot.id);
+        botsGrid.appendChild(card);
+    });
+}
+
+function selectBot(id) {
+    selectedBotId = id;
+    const bot = bots.find(b => b.id === id);
+    noBotSelected.classList.add('hidden');
+    activeInterface.classList.remove('hidden');
+    chatWindow.innerHTML = '';
+    bot.messages.forEach(appendChat);
+    updateBotHeader();
+    updateSidebar();
+}
+
+function updateBotHeader() {
+    const bot = bots.find(b => b.id === selectedBotId);
+    document.getElementById('active-bot-name').textContent = bot.username;
+    document.getElementById('active-bot-ip').textContent = `${bot.host}:${bot.port}`;
+    document.getElementById('bot-status-dot').className = `w-2 h-2 rounded-full status-${bot.status}`;
+}
+
+function appendChat(msg) {
+    const div = document.createElement('div');
+    div.className = 'chat-msg';
+    div.innerHTML = `
+        <span class="text-white/10 text-[9px] mr-4 font-black">${msg.time}</span>
+        <span class="text-white/30 text-[9px] font-black mr-2 uppercase">${msg.username}:</span>
+        <span class="text-white/80">${msg.message}</span>
+    `;
+    chatWindow.appendChild(div);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+sendChatBtn.onclick = () => {
+    const msg = chatInput.value.trim();
+    if (msg && selectedBotId) {
+        socket.emit('send-chat', { botId: selectedBotId, message: msg });
+        chatInput.value = '';
+    }
+};
+
+addBotBtn.onclick = () => addBotModal.classList.remove('hidden');
+closeBotModal.onclick = () => addBotModal.classList.add('hidden');
+addBotForm.onsubmit = (e) => {
+    e.preventDefault();
+    const data = {
+        username: document.getElementById('username').value,
+        host: document.getElementById('host').value,
+        port: 25565
+    };
+    socket.emit('add-bot', data);
+    addBotModal.classList.add('hidden');
+};

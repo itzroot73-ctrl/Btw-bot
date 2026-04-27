@@ -144,6 +144,10 @@ io.on('connection', (socket) => {
         io.emit('bot-status', data);
     });
 
+    socket.on('relay-esp-data', (data) => {
+        io.emit('relay-esp-data', data);
+    });
+
     socket.on('relay-map', (data) => {
         io.emit('bot-map', data);
     });

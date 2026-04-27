@@ -1,333 +1,206 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="no-scrollbar">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS BOT - Neural Gateway</title>
+    <title>NEXUS // NEURAL_GATEWAY_V2</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Fira+Code:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;900&family=Fira+Code:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --nexus-white: #ffffff; --nexus-black: #000000; }
+        body { background-color: var(--nexus-black); color: var(--nexus-white); font-family: 'Inter', sans-serif; overflow: hidden; }
+        .fira-code { font-family: 'Fira Code', monospace; }
+        .image-pixelated { image-rendering: pixelated; }
+        .backdrop-blur-xl { backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); }
+        .active-tab { border-bottom: 2px solid white; color: white !important; }
+        .scanline { width: 100%; height: 2px; background: rgba(255, 255, 255, 0.05); position: absolute; pointer-events: none; animation: scanlineAnim 6s linear infinite; }
+        @keyframes scanlineAnim { 0% { top: 0; } 100% { top: 100%; } }
+        #nexus-hub.active { opacity: 1; display: flex; transform: scale(1); }
+        #nexus-hub { transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); transform: scale(0.95); }
+    </style>
 </head>
-<body class="bg-[#000000] text-white overflow-hidden h-screen flex flex-col uppercase tracking-[0.15em] font-bold">
-    <!-- Header -->
-    <header class="h-20 border-b border-white/5 flex items-center justify-between px-8 z-10 bg-black">
-        <div class="flex items-center space-x-5">
-            <div class="w-10 h-10 bg-white rounded flex items-center justify-center font-black text-black text-xl">B</div>
-            <div>
-                <h1 class="text-lg font-black tracking-[0.25em] leading-none">NEXUS BOT</h1>
-                <div class="flex items-center space-x-2 mt-1.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_5px_#ef4444]"></span>
-                    <span class="text-[7px] text-white/40 font-bold tracking-[0.1em]">CONNECTING TO CORE...</span>
-                </div>
-            </div>
+<body class="h-screen flex flex-col">
+
+    <!-- Global Grid Overlay -->
+    <div class="fixed inset-0 pointer-events-none opacity-[0.03]" style="background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px); background-size: 40px 40px;"></div>
+
+    <header class="h-20 border-b border-white/5 px-8 flex items-center justify-between z-40 bg-black/50 backdrop-blur-md">
+        <div class="flex items-center space-x-6">
+            <div class="w-2 h-2 bg-white animate-pulse"></div>
+            <h1 class="font-black text-xs tracking-[0.5em] uppercase">Nexus // Central_Core</h1>
         </div>
-        <div class="flex items-center space-x-4">
-            <button id="settings-trigger" class="text-white/20 hover:text-white transition-all">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-            </button>
-            <button id="add-bot-trigger" class="bg-white hover:bg-gray-200 text-black px-6 py-2 rounded-full text-[9px] font-black tracking-[0.1em] transition-all">
-                + NEW INSTANCE
+        <div class="flex items-center space-x-8">
+            <button id="settings-toggle" class="text-white/20 hover:text-white transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
             </button>
         </div>
     </header>
 
-    <div class="flex flex-1 overflow-hidden">
+    <main class="flex-1 flex overflow-hidden">
         <!-- Sidebar -->
-        <aside class="w-80 border-r border-white/5 flex flex-col bg-black">
-            <div class="p-6 pb-2">
-                <div class="flex items-center justify-between mb-8">
-                    <div class="flex items-center space-x-2 text-white/30">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                        <h2 class="text-[8px] font-black tracking-[0.2em]">FLEET OVERVIEW (<span id="bot-count">0</span>)</h2>
-                    </div>
-                    <svg class="w-3 h-3 text-white/10 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        <aside id="sidebar" class="w-80 border-r border-white/5 flex flex-col bg-black/20 z-30 transition-all duration-500">
+            <div class="p-8 border-b border-white/5">
+                <div class="flex justify-between items-center mb-6">
+                    <span class="text-[8px] font-black tracking-[0.4em] text-white/20 uppercase">Fleet Overview</span>
+                    <span id="bot-count" class="text-[8px] font-black text-white/40">00</span>
                 </div>
-
-                <!-- Category Filters -->
-                <div id="category-filters" class="flex space-x-4 mb-6 overflow-x-auto no-scrollbar pb-2">
-                    <button class="filter-btn active text-[7px] font-black tracking-[0.2em] text-white whitespace-nowrap" data-category="ALL">ALL</button>
-                </div>
+                <button id="add-bot-btn" class="w-full bg-white text-black py-4 rounded-xl font-black text-[9px] tracking-[0.4em] hover:bg-gray-200 transition-all">INITIALIZE_UNIT</button>
             </div>
-
-            <div id="bots-grid" class="flex-1 overflow-y-auto px-6 space-y-3 pb-6">
-                <!-- Empty State -->
-                <div id="empty-sidebar" class="h-32 border border-white/5 rounded-xl flex flex-col items-center justify-center space-y-4 opacity-20">
-                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 5v-2M15 5v-2M9 19v2M15 19v2M5 9h-2M5 15h-2M19 9h2M19 15h2M9 9h6v6h-6z"/></svg>
-                    <span class="text-[7px] font-black tracking-[0.2em]">NO UNITS DEPLOYED</span>
-                </div>
+            <div id="bots-grid" class="flex-1 overflow-y-auto p-6 space-y-4 no-scrollbar">
+                <!-- Bot cards -->
             </div>
         </aside>
 
-        <!-- Main Area -->
-        <main class="flex-1 flex flex-col relative">
-            <!-- Background Grid -->
-            <div class="absolute inset-0 grid-bg opacity-30 pointer-events-none"></div>
-
-            <!-- Settings View -->
-            <div id="settings-view" class="hidden absolute inset-0 bg-black/90 z-40 p-10 overflow-y-auto">
-                <div class="max-w-4xl mx-auto">
-                    <div class="flex items-center justify-between mb-12">
-                        <h2 class="text-2xl font-black tracking-[0.4em]">SYSTEM SETTINGS</h2>
-                        <button id="close-settings" class="text-white/20 hover:text-white transition-all text-[10px] font-black tracking-[0.2em]">RETURN TO UPLINK</button>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-                        <!-- VPS Management -->
-                        <section>
-                            <h3 class="text-[10px] font-black tracking-[0.3em] text-white/40 mb-8 flex items-center">
-                                <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                                NODE ARCHITECTURE (VPS)
-                            </h3>
-
-                            <form id="add-node-form" class="space-y-6 mb-10">
-                                <div class="grid grid-cols-2 gap-4">
-                                    <input type="text" id="node-name" placeholder="NODE_IDENTIFIER" class="bg-white/[0.02] border border-white/5 rounded-xl px-5 py-3 outline-none focus:border-white/20 transition-all text-[9px]" required>
-                                    <input type="text" id="node-ip" placeholder="VPS_IP_ADDRESS" class="bg-white/[0.02] border border-white/5 rounded-xl px-5 py-3 outline-none focus:border-white/20 transition-all text-[9px]" required>
-                                </div>
-                                <button type="submit" class="w-full border border-white/10 hover:bg-white hover:text-black py-3 rounded-xl font-black text-[8px] tracking-[0.3em] transition-all">REGISTER VPS NODE</button>
-                            </form>
-
-                            <div id="nodes-list" class="space-y-3">
-                                <!-- Nodes will appear here -->
-                            </div>
-                        </section>
-
-                        <!-- System Info -->
-                        <section>
-                            <h3 class="text-[10px] font-black tracking-[0.3em] text-white/40 mb-8 flex items-center">
-                                <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                CORE STATUS
-                            </h3>
-                            <div class="bg-white/[0.02] border border-white/5 rounded-2xl p-6 space-y-4">
-                                <div class="flex justify-between items-center">
-                                    <span class="text-[8px] text-white/20 font-black">ACTIVE INSTANCES</span>
-                                    <span id="active-instances-count" class="text-[10px] font-black">0</span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-[8px] text-white/20 font-black">REGISTERED NODES</span>
-                                    <span id="registered-nodes-count" class="text-[10px] font-black">0</span>
-                                </div>
-                                <div class="pt-4 border-t border-white/5">
-                                    <span class="text-[7px] text-white/10 font-black tracking-widest leading-loose">NEXUS PROTOCOL V2.4.0 RUNNING ON DISTRIBUTED NEURAL NETWORK. ALL UPLINKS SECURED.</span>
-                                </div>
-                            </div>
-                        </section>
-
-                        <!-- API Configuration -->
-                        <section>
-                            <h3 class="text-[10px] font-black tracking-[0.3em] text-white/40 mb-8 flex items-center">
-                                <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
-                                UPLINK ENDPOINT
-                            </h3>
-                            <div class="space-y-4">
-                                <div class="relative">
-                                    <input type="text" id="api-endpoint" placeholder="HTTPS://YOUR-CORE-API.COM" class="w-full bg-white/[0.02] border border-white/5 rounded-xl px-5 py-4 outline-none focus:border-white/20 transition-all text-[9px]">
-                                    <div id="connection-status" class="absolute right-5 top-1/2 -translate-y-1/2 text-[6px] font-black tracking-widest text-white/20">OFFLINE</div>
-                                </div>
-                                <button id="save-endpoint" class="w-full border border-white/10 hover:bg-white hover:text-black py-3 rounded-xl font-black text-[8px] tracking-[0.3em] transition-all">ESTABLISH REMOTE CONNECTION</button>
-                            </div>
-                        </section>
-
-                        <!-- System Guide -->
-                        <section class="lg:col-span-3 mt-8 border-t border-white/5 pt-12">
-                            <h3 class="text-[10px] font-black tracking-[0.3em] text-white/40 mb-10 flex items-center">
-                                <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                                OPERATIONAL PROTOCOLS (GUIDE)
-                            </h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                                <div class="space-y-4">
-                                    <h4 class="text-[8px] font-black text-white/60 tracking-widest uppercase">01. Node Registration</h4>
-                                    <p class="text-[7px] text-white/20 font-black leading-relaxed tracking-widest">REGISTER YOUR VPS BY PROVIDING A UNIQUE IDENTIFIER AND ITS PUBLIC IP ADDRESS. THIS ALLOWS THE NEXUS TO TRACK YOUR DISTRIBUTED ARCHITECTURE.</p>
-                                </div>
-                                <div class="space-y-4">
-                                    <h4 class="text-[8px] font-black text-white/60 tracking-widest uppercase">02. Instance Deployment</h4>
-                                    <p class="text-[7px] text-white/20 font-black leading-relaxed tracking-widest">USE '+ NEW INSTANCE' TO INITIALIZE A BOT. DEFAULT UPLINK IS PLAY.BANANASMP.NET. ASSIGN UNITS TO SPECIFIC VPS NODES FOR LOAD BALANCING.</p>
-                                </div>
-                                <div class="space-y-4">
-                                    <h4 class="text-[8px] font-black text-white/60 tracking-widest uppercase">03. Neural Grids</h4>
-                                    <p class="text-[7px] text-white/20 font-black leading-relaxed tracking-widest">ORGANIZE YOUR FLEET USING CUSTOM CATEGORIES. FILTER YOUR ACTIVE OVERVIEW BY SELECTING CATEGORY TABS IN THE SIDEBAR.</p>
-                                </div>
-                                <div class="space-y-4">
-                                    <h4 class="text-[8px] font-black text-white/60 tracking-widest uppercase">04. Remote Uplink</h4>
-                                    <p class="text-[7px] text-white/20 font-black leading-relaxed tracking-widest">IF RUNNING THE UI VIA NETLIFY, CONFIGURE YOUR 'CORE API ENDPOINT' TO POINT TO YOUR STANDALONE NODE.JS SERVER URL (E.G. RENDER OR VPS).</p>
-                                </div>
-                                <div class="space-y-4 lg:col-span-4 mt-6 p-6 border border-white/5 bg-white/[0.01] rounded-2xl">
-                                    <h4 class="text-[8px] font-black text-white/60 tracking-widest uppercase mb-4">💡 PRO TIP: TEXT FORMATTING</h4>
-                                    <p class="text-[7px] text-white/20 font-black leading-relaxed tracking-widest">THE INTERFACE USES AN ALL-CAPS AESTHETIC FOR VISUAL IMPACT. HOWEVER, THE SYSTEM PRESERVES SMALL LETTERS (LOWERCASE) FOR USERNAMES AND PASSWORDS TO ENSURE COMPATIBILITY WITH MINECRAFT SERVER REQUIREMENTS. TYPE NATURALLY; THE CORE HANDLES THE REST.</p>
-                                </div>
-                            </div>
-                        </section>
-                    </div>
-                </div>
-            </div>
-
+        <!-- Main Workspace -->
+        <section class="flex-1 relative flex flex-col">
             <!-- Idle State -->
-            <div id="no-bot-selected" class="absolute inset-0 flex flex-col items-center justify-center z-10 transition-all duration-700">
-                <div class="w-24 h-24 bg-white/[0.03] rounded-[2rem] flex items-center justify-center mb-10 border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.02)]">
-                    <svg class="w-10 h-10 text-white/10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 5v-2M15 5v-2M9 19v2M15 19v2M5 9h-2M5 15h-2M19 9h2M19 15h2M9 9h6v6h-6z"/></svg>
+            <div id="no-bot-selected" class="absolute inset-0 flex flex-col items-center justify-center z-10 transition-all">
+                <div class="w-20 h-20 bg-white/[0.02] border border-white/5 rounded-3xl flex items-center justify-center mb-8">
+                    <svg class="w-8 h-8 text-white/10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 5v-2M15 5v-2M9 19v2M15 19v2M5 9h-2M5 15h-2M19 9h2M19 15h2M9 9h6v6h-6z"/></svg>
                 </div>
-                <h2 class="text-3xl font-black text-white tracking-[0.6em] mb-4">NEURAL GATEWAY IDLE</h2>
-                <p class="text-[8px] text-white/20 max-w-xs text-center font-black leading-loose tracking-[0.25em]">
-                    SELECT A CORE INSTANCE FROM THE SIDEBAR TO ESTABLISH A HIGH-BANDWIDTH UPLINK
-                </p>
+                <h2 class="text-xl font-black tracking-[0.6em] text-white/20">UPLINK_IDLE</h2>
             </div>
 
-            <!-- Active Interface -->
-            <div id="chat-container" class="hidden opacity-0 flex-1 flex flex-row p-10 z-20 transition-all duration-700 space-x-10">
-                <!-- Main Chat Area -->
-                <div class="flex-1 flex flex-col min-w-0">
-                <div id="active-bot-header" class="mb-10 flex items-center justify-between border border-white/5 p-6 rounded-2xl bg-white/[0.01]">
+            <!-- Active Bot Interface -->
+            <div id="active-interface" class="hidden flex-1 flex flex-col overflow-hidden">
+                <div class="h-24 px-10 border-b border-white/5 flex items-center justify-between">
                     <div class="flex items-center space-x-6">
-                        <div id="bot-status-indicator" class="w-2 h-2 rounded-full bg-white"></div>
+                        <div id="bot-status-dot" class="w-2 h-2 rounded-full bg-white"></div>
                         <div>
-                            <h2 id="active-bot-name" class="font-black text-xl tracking-[0.15em] leading-none mb-2">BOT_UNIT</h2>
-                            <p id="active-bot-ip" class="text-[8px] text-white/20 font-black tracking-[0.2em]">UPLINK: 0.0.0.0:00000</p>
+                            <h2 id="active-bot-name" class="font-black text-lg tracking-widest uppercase">UNIT_NULL</h2>
+                            <p id="active-bot-ip" class="text-[7px] text-white/20 font-black tracking-[0.2em] mt-1">0.0.0.0:0000</p>
                         </div>
                     </div>
-                    <button id="remove-bot-btn" class="text-white/20 hover:text-red-500 text-[8px] font-black tracking-[0.2em] transition-colors">DECOMMISSION UNIT</button>
                 </div>
 
-                <div id="chat-window" class="flex-1 overflow-y-auto mb-10 space-y-3 fira-code text-[11px] leading-relaxed text-white/60">
-                    <!-- Logs -->
-                </div>
-
-                    <div class="flex items-center space-x-4">
-                        <div class="flex-1 relative group">
-                            <input type="text" id="chat-input" placeholder="AUTHORIZE COMMAND EXECUTION..." class="w-full bg-white/[0.02] border border-white/5 rounded-2xl px-6 py-4 outline-none focus:border-white/20 transition-all fira-code text-[10px] placeholder:text-white/10" disabled>
-                            <div class="absolute right-6 top-1/2 -translate-y-1/2 text-[7px] text-white/10 font-black tracking-[0.2em]">READY</div>
+                <div class="flex-1 flex overflow-hidden">
+                    <div class="flex-1 flex flex-col p-10">
+                        <div id="chat-window" class="flex-1 overflow-y-auto mb-10 space-y-4 fira-code text-[11px] text-white/50 no-scrollbar"></div>
+                        <div class="flex space-x-4">
+                            <input type="text" id="chat-input" placeholder="EXECUTE_COMMAND..." class="flex-1 bg-white/[0.03] border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-white/20 transition-all text-[10px]">
+                            <button id="send-chat-btn" class="w-14 h-14 bg-white text-black flex items-center justify-center rounded-2xl hover:bg-gray-200 transition-all">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" stroke-width="2.5"></path></svg>
+                            </button>
                         </div>
-                        <button id="send-chat-btn" class="bg-white hover:bg-gray-100 text-black w-14 h-14 flex items-center justify-center rounded-2xl transition-all disabled:opacity-10" disabled>
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-                        </button>
                     </div>
-                </div>
 
-                <!-- Visual Uplink Sidebar (Map) -->
-                <div id="visual-uplink" class="w-64 flex flex-col space-y-8">
-                    <div class="border border-white/5 bg-white/[0.01] rounded-2xl p-6 flex flex-col h-full">
-                        <div class="flex items-center justify-between mb-6">
-                            <h3 class="text-[9px] font-black tracking-[0.3em] text-white/40 flex items-center uppercase">
-                                <svg class="w-3.5 h-3.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A2 2 0 013 15.488V5.512a2 2 0 011.553-1.944L9 2l5.447 2.724A2 2 0 0116 6.668V16.512a2 2 0 01-1.553 1.944L9 20z"></path></svg>
-                                NAV_MAP DATA
-                            </h3>
-                            <span id="map-status" class="text-[6px] font-black tracking-widest text-white/10">STALE</span>
-                        </div>
-
-                        <div class="aspect-square bg-black border border-white/5 rounded-xl overflow-hidden relative group">
-                            <canvas id="map-canvas" width="128" height="128" class="w-full h-full image-pixelated grayscale opacity-50 group-hover:opacity-100 transition-all"></canvas>
-                            <div class="absolute inset-0 pointer-events-none border border-white/5"></div>
-                            <!-- Scanline Animation -->
-                            <div class="absolute inset-0 scanline opacity-5"></div>
-                        </div>
-
-                        <div class="mt-8 space-y-4">
-                            <div class="flex justify-between items-center">
-                                <span class="text-[7px] text-white/20 font-black">RESOLUTION</span>
-                                <span class="text-[8px] font-black">128X128 PX</span>
+                    <!-- Visual Uplink (Map & ESP) -->
+                    <div class="w-80 border-l border-white/5 p-8 flex flex-col space-y-8">
+                        <div class="border border-white/5 bg-white/[0.01] rounded-2xl p-6">
+                            <h3 class="text-[8px] font-black tracking-[0.3em] text-white/20 mb-6 uppercase">Tactical_Map</h3>
+                            <div class="aspect-square bg-black border border-white/10 rounded-xl relative overflow-hidden">
+                                <canvas id="map-canvas" width="128" height="128" class="w-full h-full image-pixelated"></canvas>
+                                <div class="scanline"></div>
                             </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-[7px] text-white/20 font-black">SYNC_RATE</span>
-                                <span class="text-[8px] font-black">REAL-TIME</span>
-                            </div>
-                            <button id="refresh-map" class="w-full mt-4 border border-white/10 hover:bg-white hover:text-black py-3 rounded-xl font-black text-[7px] tracking-[0.3em] transition-all">REFRESH UPLINK</button>
+                        </div>
+                        <div id="esp-list" class="flex-1 overflow-y-auto space-y-3 no-scrollbar">
+                            <h3 class="text-[8px] font-black tracking-[0.3em] text-white/20 mb-4 uppercase">Neural_Scan</h3>
+                            <!-- Entities will be listed here -->
                         </div>
                     </div>
                 </div>
             </div>
-        </main>
-    </div>
+        </section>
+    </main>
 
-    <!-- Modal -->
-    <!-- Combat Settings Modal (Glassmorphism) -->
-    <div id="combat-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-md z-[60] flex items-center justify-center p-6 opacity-0 transition-all duration-500">
-        <div class="max-w-md w-full bg-white/[0.03] border border-white/10 rounded-[2.5rem] p-10 shadow-2xl overflow-hidden relative group">
-            <div class="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
-
-            <div class="flex justify-between items-center mb-10 relative z-10">
+    <!-- NEXUS HUB (Multi-Category Dashboard) -->
+    <div id="nexus-hub" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xl flex items-center justify-center p-6 opacity-0">
+        <div class="max-w-2xl w-full bg-[#050505] border border-white/10 rounded-[3rem] overflow-hidden shadow-2xl flex flex-col h-[600px]">
+            <div class="p-10 border-b border-white/5 flex items-center justify-between">
                 <div>
-                    <h3 class="text-xs font-black tracking-[0.4em] text-white/40 uppercase mb-2">Combat Protocol</h3>
-                    <h2 class="text-2xl font-black tracking-widest text-white">KILL_AURA_V1</h2>
+                    <h2 class="text-2xl font-black tracking-[0.3em] text-white">NEXUS_HUB_V2</h2>
+                    <p class="text-[8px] text-white/20 font-black tracking-[0.5em] uppercase mt-2">Core_Module_Reconfiguration</p>
                 </div>
-                <button id="close-combat-modal" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                <button id="close-hub" class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2"></path></svg>
                 </button>
             </div>
 
-            <div class="space-y-10 relative z-10">
-                <div class="flex items-center justify-between p-6 bg-white/[0.02] border border-white/5 rounded-2xl">
-                    <div>
-                        <h4 class="text-[10px] font-black tracking-widest mb-1">SYSTEM_STATUS</h4>
-                        <p class="text-[7px] text-white/20 font-black tracking-widest uppercase">AUTO_ENGAGEMENT_MODULE</p>
+            <!-- Tabs -->
+            <div class="flex border-b border-white/5 px-10">
+                <button class="tab-btn py-6 px-8 text-[9px] font-black tracking-[0.4em] text-white/20 hover:text-white transition-all active-tab" data-tab="combat">COMBAT</button>
+                <button class="tab-btn py-6 px-8 text-[9px] font-black tracking-[0.4em] text-white/20 hover:text-white transition-all" data-tab="visual">VISUAL</button>
+                <button class="tab-btn py-6 px-8 text-[9px] font-black tracking-[0.4em] text-white/20 hover:text-white transition-all" data-tab="utility">UTILITY</button>
+                <button class="tab-btn py-6 px-8 text-[9px] font-black tracking-[0.4em] text-white/20 hover:text-white transition-all" data-tab="movement">MOVEMENT</button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="flex-1 overflow-y-auto p-12 no-scrollbar">
+                <!-- Combat Tab -->
+                <div id="tab-combat" class="tab-content space-y-12">
+                    <div class="grid grid-cols-2 gap-8">
+                        <div class="bg-white/[0.02] border border-white/5 p-6 rounded-2xl">
+                            <div class="flex justify-between items-center mb-6">
+                                <h4 class="text-[9px] font-black tracking-widest uppercase">Kill_Aura</h4>
+                                <input type="checkbox" id="killaura-toggle" class="sr-only peer">
+                                <label for="killaura-toggle" class="w-10 h-5 bg-white/5 rounded-full relative cursor-pointer peer-checked:bg-white/20 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white/10 after:w-3 after:h-3 after:rounded-full after:transition-all peer-checked:after:translate-x-5 peer-checked:after:bg-white"></label>
+                            </div>
+                            <div class="space-y-4">
+                                <div class="flex justify-between text-[8px] font-black text-white/40"><span>RANGE</span><span id="range-val">3.8M</span></div>
+                                <input type="range" id="killaura-range" min="2" max="6" step="0.1" class="w-full accent-white opacity-20 hover:opacity-100 transition-opacity">
+                            </div>
+                        </div>
+                        <div class="bg-white/[0.02] border border-white/5 p-6 rounded-2xl flex items-center justify-between">
+                            <h4 class="text-[9px] font-black tracking-widest uppercase">Trigger_Bot</h4>
+                            <input type="checkbox" id="triggerbot-toggle" class="sr-only peer">
+                            <label for="triggerbot-toggle" class="w-10 h-5 bg-white/5 rounded-full relative cursor-pointer peer-checked:bg-white/20 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white/10 after:w-3 after:h-3 after:rounded-full after:transition-all peer-checked:after:translate-x-5 peer-checked:after:bg-white"></label>
+                        </div>
                     </div>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="ka-enabled" class="sr-only peer">
-                        <div class="w-14 h-7 bg-white/5 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-['] after:absolute after:top-[4px] after:left-[4px] after:bg-white/20 peer-checked:after:bg-white after:rounded-full after:h-5 after:w-6 after:transition-all peer-checked:bg-white/10 border border-white/5"></div>
-                    </label>
+                    <div class="bg-white/[0.02] border border-white/5 p-6 rounded-2xl space-y-6">
+                         <div class="flex justify-between items-center">
+                            <h4 class="text-[9px] font-black tracking-widest uppercase">Aim_Assist</h4>
+                            <input type="checkbox" id="aimassist-toggle" class="sr-only peer">
+                            <label for="aimassist-toggle" class="w-10 h-5 bg-white/5 rounded-full relative cursor-pointer peer-checked:bg-white/20 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white/10 after:w-3 after:h-3 after:rounded-full after:transition-all peer-checked:after:translate-x-5 peer-checked:after:bg-white"></label>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="space-y-6">
-                    <div class="flex justify-between items-end">
-                        <h4 class="text-[9px] font-black tracking-widest">STRIKE_RANGE</h4>
-                        <span id="ka-range-val" class="text-xl font-black tracking-tighter text-white">3.8<span class="text-[10px] text-white/20 ml-1">M</span></span>
+                <!-- Visual Tab -->
+                <div id="tab-visual" class="tab-content hidden space-y-8">
+                     <div class="bg-white/[0.02] border border-white/5 p-6 rounded-2xl flex items-center justify-between">
+                        <h4 class="text-[9px] font-black tracking-widest uppercase">Entity_Scanner (ESP)</h4>
+                        <input type="checkbox" id="esp-toggle" class="sr-only peer">
+                        <label for="esp-toggle" class="w-10 h-5 bg-white/5 rounded-full relative cursor-pointer peer-checked:bg-white/20 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white/10 after:w-3 after:h-3 after:rounded-full after:transition-all peer-checked:after:translate-x-5 peer-checked:after:bg-white"></label>
                     </div>
-                    <input type="range" id="ka-range" min="2" max="6" step="0.1" value="3.8" class="w-full h-1 bg-white/5 rounded-lg appearance-none cursor-pointer accent-white">
                 </div>
 
-                <div class="space-y-6">
-                    <div class="flex justify-between items-end">
-                        <h4 class="text-[9px] font-black tracking-widest">STRIKE_VELOCITY</h4>
-                        <span id="ka-speed-val" class="text-xl font-black tracking-tighter text-white">10<span class="text-[10px] text-white/20 ml-1">APS</span></span>
+                <!-- Utility Tab -->
+                <div id="tab-utility" class="tab-content hidden grid grid-cols-2 gap-8">
+                    <div class="bg-white/[0.02] border border-white/5 p-6 rounded-2xl flex items-center justify-between">
+                        <h4 class="text-[9px] font-black tracking-widest uppercase">Auto_Eat</h4>
+                        <input type="checkbox" id="autoeat-toggle" class="sr-only peer">
+                        <label for="autoeat-toggle" class="w-10 h-5 bg-white/5 rounded-full relative cursor-pointer peer-checked:bg-white/20 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white/10 after:w-3 after:h-3 after:rounded-full after:transition-all peer-checked:after:translate-x-5 peer-checked:after:bg-white"></label>
                     </div>
-                    <input type="range" id="ka-speed" min="1" max="20" step="1" value="10" class="w-full h-1 bg-white/5 rounded-lg appearance-none cursor-pointer accent-white">
+                    <div class="bg-white/[0.02] border border-white/5 p-6 rounded-2xl flex items-center justify-between">
+                        <h4 class="text-[9px] font-black tracking-widest uppercase">Auto_Armor</h4>
+                        <input type="checkbox" id="autoarmor-toggle" class="sr-only peer">
+                        <label for="autoarmor-toggle" class="w-10 h-5 bg-white/5 rounded-full relative cursor-pointer peer-checked:bg-white/20 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white/10 after:w-3 after:h-3 after:rounded-full after:transition-all peer-checked:after:translate-x-5 peer-checked:after:bg-white"></label>
+                    </div>
                 </div>
 
-                <div class="pt-4">
-                    <p class="text-[7px] text-white/10 font-black text-center leading-relaxed tracking-[0.2em] uppercase">
-                        CAUTION: HIGH VELOCITY SETTINGS MAY TRIGGER HEURISTIC DETECTION ALGORITHMS. OPERATE WITH DISCRETION.
-                    </p>
+                <!-- Movement Tab -->
+                <div id="tab-movement" class="tab-content hidden grid grid-cols-2 gap-8">
+                    <div class="bg-white/[0.02] border border-white/5 p-6 rounded-2xl flex items-center justify-between">
+                        <h4 class="text-[9px] font-black tracking-widest uppercase">Auto_Sprint</h4>
+                        <input type="checkbox" id="autosprint-toggle" class="sr-only peer">
+                        <label for="autosprint-toggle" class="w-10 h-5 bg-white/5 rounded-full relative cursor-pointer peer-checked:bg-white/20 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white/10 after:w-3 after:h-3 after:rounded-full after:transition-all peer-checked:after:translate-x-5 peer-checked:after:bg-white"></label>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-    <div id="add-bot-modal" class="hidden fixed inset-0 bg-black/98 z-50 flex items-center justify-center p-6">
+
+    <!-- Modals (Add Bot, etc) -->
+    <div id="add-bot-modal" class="hidden fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-6">
+        <!-- Simplified modal for space -->
         <div class="max-w-md w-full border border-white/10 rounded-3xl p-10 bg-black">
-            <div class="flex justify-between items-center mb-10">
-                <h3 class="text-sm font-black tracking-[0.3em]">UNIT AUTHORIZATION</h3>
-                <button id="close-modal" class="text-white/20 hover:text-white transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            <form id="add-bot-form" class="space-y-8">
-                <div class="grid grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-[8px] font-black tracking-[0.3em] text-white/20 mb-4">UNIT IDENTIFIER</label>
-                        <input type="text" id="username" placeholder="CORE_NULL_01" class="w-full bg-white/[0.02] border border-white/5 rounded-xl px-5 py-4 outline-none focus:border-white/20 transition-all text-[10px]">
-                    </div>
-                    <div>
-                        <label class="block text-[8px] font-black tracking-[0.3em] text-white/20 mb-4">CATEGORY</label>
-                        <input type="text" id="category" placeholder="NEURAL_GRID" class="w-full bg-white/[0.02] border border-white/5 rounded-xl px-5 py-4 outline-none focus:border-white/20 transition-all text-[10px]">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-[8px] font-black tracking-[0.3em] text-white/20 mb-4">DEPLOYMENT NODE (VPS)</label>
-                    <select id="bot-node" class="w-full bg-white/[0.02] border border-white/5 rounded-xl px-5 py-4 outline-none focus:border-white/20 transition-all text-[10px] appearance-none">
-                        <option value="CORE_LOCAL">CORE_LOCAL (DEFAULT)</option>
-                    </select>
-                </div>
-                <div class="grid grid-cols-3 gap-6">
-                    <div class="col-span-2">
-                        <label class="block text-[8px] font-black tracking-[0.3em] text-white/20 mb-4">TARGET UPLINK</label>
-                        <input type="text" id="host" placeholder="PLAY.BANANASMP.NET" class="w-full bg-white/[0.02] border border-white/5 rounded-xl px-5 py-4 outline-none focus:border-white/20 transition-all text-[10px]">
-                    </div>
-                    <div>
-                        <label class="block text-[8px] font-black tracking-[0.3em] text-white/20 mb-4">PORT</label>
-                        <input type="number" id="port" placeholder="25565" class="w-full bg-white/[0.02] border border-white/5 rounded-xl px-5 py-4 outline-none focus:border-white/20 transition-all text-[10px]">
-                    </div>
-                </div>
-                <button type="submit" class="w-full bg-white hover:bg-gray-100 text-black py-5 rounded-2xl font-black text-[10px] tracking-[0.4em] mt-4 shadow-2xl shadow-white/5">INITIALIZE DEPLOYMENT</button>
-            </form>
+             <h3 class="text-sm font-black tracking-[0.3em] mb-10">UNIT AUTHORIZATION</h3>
+             <form id="add-bot-form" class="space-y-6">
+                 <input type="text" id="username" placeholder="USERNAME" class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-[10px] outline-none">
+                 <input type="text" id="host" placeholder="HOST" class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-[10px] outline-none">
+                 <button type="submit" class="w-full bg-white text-black py-4 rounded-xl font-black text-[10px] tracking-[0.4em]">DEPLOY</button>
+                 <button type="button" id="close-modal" class="w-full text-white/20 text-[8px] font-black mt-4">CANCEL</button>
+             </form>
         </div>
     </div>
 
