@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS // NEURAL_GATEWAY_V2</title>
+    <title>NEXUS // MOD_26.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;900&family=Fira+Code:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root { --nexus-white: #ffffff; --nexus-black: #000000; }
         body { background-color: var(--nexus-black); color: var(--nexus-white); font-family: 'Inter', sans-serif; overflow: hidden; }
         .fira-code { font-family: 'Fira Code', monospace; }
-        .image-pixelated { image-rendering: pixelated; }
         .backdrop-blur-xl { backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); }
         .active-tab { border-bottom: 2px solid white; color: white !important; }
         .scanline { width: 100%; height: 2px; background: rgba(255, 255, 255, 0.05); position: absolute; pointer-events: none; animation: scanlineAnim 6s linear infinite; }
@@ -21,55 +20,37 @@
 </head>
 <body class="h-screen flex flex-col">
 
-    <!-- Global Grid Overlay -->
     <div class="fixed inset-0 pointer-events-none opacity-[0.03]" style="background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px); background-size: 40px 40px;"></div>
 
     <header class="h-20 border-b border-white/5 px-8 flex items-center justify-between z-40 bg-black/50 backdrop-blur-md">
         <div class="flex items-center space-x-6">
             <div class="w-2 h-2 bg-white animate-pulse"></div>
-            <h1 class="font-black text-xs tracking-[0.5em] uppercase">Nexus // Central_Core</h1>
-        </div>
-        <div class="flex items-center space-x-8">
-            <button id="settings-toggle" class="text-white/20 hover:text-white transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-            </button>
+            <h1 class="font-black text-xs tracking-[0.5em] uppercase">Nexus // Mod_26.1</h1>
         </div>
     </header>
 
     <main class="flex-1 flex overflow-hidden">
-        <!-- Sidebar -->
-        <aside id="sidebar" class="w-80 border-r border-white/5 flex flex-col bg-black/20 z-30 transition-all duration-500">
+        <aside id="sidebar" class="w-80 border-r border-white/5 flex flex-col bg-black/20 z-30">
             <div class="p-8 border-b border-white/5">
                 <div class="flex justify-between items-center mb-6">
-                    <span class="text-[8px] font-black tracking-[0.4em] text-white/20 uppercase">Fleet Overview</span>
+                    <span class="text-[8px] font-black tracking-[0.4em] text-white/20 uppercase">Units</span>
                     <span id="bot-count" class="text-[8px] font-black text-white/40">00</span>
                 </div>
-                <button id="add-bot-btn" class="w-full bg-white text-black py-4 rounded-xl font-black text-[9px] tracking-[0.4em] hover:bg-gray-200 transition-all">INITIALIZE_UNIT</button>
+                <button id="add-bot-btn" class="w-full bg-white text-black py-4 rounded-xl font-black text-[9px] tracking-[0.4em]">DEPLOY_UNIT</button>
             </div>
-            <div id="bots-grid" class="flex-1 overflow-y-auto p-6 space-y-4 no-scrollbar">
-                <!-- Bot cards -->
-            </div>
+            <div id="bots-grid" class="flex-1 overflow-y-auto p-6 space-y-4 no-scrollbar"></div>
         </aside>
 
-        <!-- Main Workspace -->
         <section class="flex-1 relative flex flex-col">
-            <!-- Idle State -->
-            <div id="no-bot-selected" class="absolute inset-0 flex flex-col items-center justify-center z-10 transition-all">
-                <div class="w-20 h-20 bg-white/[0.02] border border-white/5 rounded-3xl flex items-center justify-center mb-8">
-                    <svg class="w-8 h-8 text-white/10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 5v-2M15 5v-2M9 19v2M15 19v2M5 9h-2M5 15h-2M19 9h2M19 15h2M9 9h6v6h-6z"/></svg>
-                </div>
-                <h2 class="text-xl font-black tracking-[0.6em] text-white/20">UPLINK_IDLE</h2>
+            <div id="no-bot-selected" class="absolute inset-0 flex flex-col items-center justify-center z-10">
+                <h2 class="text-xl font-black tracking-[0.6em] text-white/20">LINK_OFFLINE</h2>
             </div>
 
-            <!-- Active Bot Interface -->
             <div id="active-interface" class="hidden flex-1 flex flex-col overflow-hidden">
                 <div class="h-24 px-10 border-b border-white/5 flex items-center justify-between">
                     <div class="flex items-center space-x-6">
-                        <div id="bot-status-dot" class="w-2 h-2 rounded-full bg-white"></div>
-                        <div>
-                            <h2 id="active-bot-name" class="font-black text-lg tracking-widest uppercase">UNIT_NULL</h2>
-                            <p id="active-bot-ip" class="text-[7px] text-white/20 font-black tracking-[0.2em] mt-1">0.0.0.0:0000</p>
-                        </div>
+                        <div id="bot-status-dot" class="w-2 h-2 rounded-full"></div>
+                        <h2 id="active-bot-name" class="font-black text-lg tracking-widest">UNIT</h2>
                     </div>
                 </div>
 
@@ -77,25 +58,16 @@
                     <div class="flex-1 flex flex-col p-10">
                         <div id="chat-window" class="flex-1 overflow-y-auto mb-10 space-y-4 fira-code text-[11px] text-white/50 no-scrollbar"></div>
                         <div class="flex space-x-4">
-                            <input type="text" id="chat-input" placeholder="EXECUTE_COMMAND..." class="flex-1 bg-white/[0.03] border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-white/20 transition-all text-[10px]">
-                            <button id="send-chat-btn" class="w-14 h-14 bg-white text-black flex items-center justify-center rounded-2xl hover:bg-gray-200 transition-all">
+                            <input type="text" id="chat-input" placeholder="CMD_INPUT..." class="flex-1 bg-white/[0.03] border border-white/10 rounded-2xl px-6 py-4 text-[10px]">
+                            <button id="send-chat-btn" class="w-14 h-14 bg-white text-black flex items-center justify-center rounded-2xl">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" stroke-width="2.5"></path></svg>
                             </button>
                         </div>
                     </div>
 
-                    <!-- Visual Uplink (Map & ESP) -->
                     <div class="w-80 border-l border-white/5 p-8 flex flex-col space-y-8">
-                        <div class="border border-white/5 bg-white/[0.01] rounded-2xl p-6">
-                            <h3 class="text-[8px] font-black tracking-[0.3em] text-white/20 mb-6 uppercase">Tactical_Map</h3>
-                            <div class="aspect-square bg-black border border-white/10 rounded-xl relative overflow-hidden">
-                                <canvas id="map-canvas" width="128" height="128" class="w-full h-full image-pixelated"></canvas>
-                                <div class="scanline"></div>
-                            </div>
-                        </div>
                         <div id="esp-list" class="flex-1 overflow-y-auto space-y-3 no-scrollbar">
                             <h3 class="text-[8px] font-black tracking-[0.3em] text-white/20 mb-4 uppercase">Neural_Scan</h3>
-                            <!-- Entities will be listed here -->
                         </div>
                     </div>
                 </div>
@@ -103,51 +75,48 @@
         </section>
     </main>
 
-    <!-- NEXUS HUB (Multi-Category Dashboard) -->
+    <!-- NEXUS HUB 26.1 -->
     <div id="nexus-hub" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xl flex items-center justify-center p-6 opacity-0">
-        <div class="max-w-2xl w-full bg-[#050505] border border-white/10 rounded-[3rem] overflow-hidden shadow-2xl flex flex-col h-[600px]">
+        <div class="max-w-2xl w-full bg-[#050505] border border-white/10 rounded-[3rem] overflow-hidden shadow-2xl flex flex-col h-[650px]">
             <div class="p-10 border-b border-white/5 flex items-center justify-between">
                 <div>
-                    <h2 class="text-2xl font-black tracking-[0.3em] text-white">NEXUS_HUB_V2</h2>
-                    <p class="text-[8px] text-white/20 font-black tracking-[0.5em] uppercase mt-2">Core_Module_Reconfiguration</p>
+                    <h2 class="text-2xl font-black tracking-[0.3em] text-white">NEXUS_HUB_26.1</h2>
                 </div>
-                <button id="close-hub" class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all">
+                <button id="close-hub" class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2"></path></svg>
                 </button>
             </div>
 
-            <!-- Tabs -->
             <div class="flex border-b border-white/5 px-10">
-                <button class="tab-btn py-6 px-8 text-[9px] font-black tracking-[0.4em] text-white/20 hover:text-white transition-all active-tab" data-tab="combat">COMBAT</button>
-                <button class="tab-btn py-6 px-8 text-[9px] font-black tracking-[0.4em] text-white/20 hover:text-white transition-all" data-tab="visual">VISUAL</button>
-                <button class="tab-btn py-6 px-8 text-[9px] font-black tracking-[0.4em] text-white/20 hover:text-white transition-all" data-tab="utility">UTILITY</button>
-                <button class="tab-btn py-6 px-8 text-[9px] font-black tracking-[0.4em] text-white/20 hover:text-white transition-all" data-tab="movement">MOVEMENT</button>
+                <button class="tab-btn py-6 px-8 text-[9px] font-black tracking-[0.4em] text-white/20 active-tab" data-tab="combat">COMBAT</button>
+                <button class="tab-btn py-6 px-8 text-[9px] font-black tracking-[0.4em] text-white/20" data-tab="visual">VISUAL</button>
+                <button class="tab-btn py-6 px-8 text-[9px] font-black tracking-[0.4em] text-white/20" data-tab="utility">UTILITY</button>
+                <button class="tab-btn py-6 px-8 text-[9px] font-black tracking-[0.4em] text-white/20" data-tab="movement">MOVEMENT</button>
             </div>
 
-            <!-- Tab Content -->
             <div class="flex-1 overflow-y-auto p-12 no-scrollbar">
                 <!-- Combat Tab -->
-                <div id="tab-combat" class="tab-content space-y-12">
+                <div id="tab-combat" class="tab-content space-y-8">
                     <div class="grid grid-cols-2 gap-8">
                         <div class="bg-white/[0.02] border border-white/5 p-6 rounded-2xl">
-                            <div class="flex justify-between items-center mb-6">
+                             <div class="flex justify-between items-center mb-4">
                                 <h4 class="text-[9px] font-black tracking-widest uppercase">Kill_Aura</h4>
                                 <input type="checkbox" id="killaura-toggle" class="sr-only peer">
                                 <label for="killaura-toggle" class="w-10 h-5 bg-white/5 rounded-full relative cursor-pointer peer-checked:bg-white/20 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white/10 after:w-3 after:h-3 after:rounded-full after:transition-all peer-checked:after:translate-x-5 peer-checked:after:bg-white"></label>
                             </div>
-                            <div class="space-y-4">
-                                <div class="flex justify-between text-[8px] font-black text-white/40"><span>RANGE</span><span id="range-val">3.8M</span></div>
-                                <input type="range" id="killaura-range" min="2" max="6" step="0.1" class="w-full accent-white opacity-20 hover:opacity-100 transition-opacity">
-                            </div>
+                            <input type="range" id="killaura-range" min="2" max="6" step="0.1" class="w-full accent-white">
+                        </div>
+                        <div class="bg-white/[0.02] border border-white/5 p-6 rounded-2xl flex items-center justify-between">
+                            <h4 class="text-[9px] font-black tracking-widest uppercase">Velocity_Anti-KB</h4>
+                            <input type="checkbox" id="velocity-toggle" class="sr-only peer">
+                            <label for="velocity-toggle" class="w-10 h-5 bg-white/5 rounded-full relative cursor-pointer peer-checked:bg-white/20 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white/10 after:w-3 after:h-3 after:rounded-full after:transition-all peer-checked:after:translate-x-5 peer-checked:after:bg-white"></label>
                         </div>
                         <div class="bg-white/[0.02] border border-white/5 p-6 rounded-2xl flex items-center justify-between">
                             <h4 class="text-[9px] font-black tracking-widest uppercase">Trigger_Bot</h4>
                             <input type="checkbox" id="triggerbot-toggle" class="sr-only peer">
                             <label for="triggerbot-toggle" class="w-10 h-5 bg-white/5 rounded-full relative cursor-pointer peer-checked:bg-white/20 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white/10 after:w-3 after:h-3 after:rounded-full after:transition-all peer-checked:after:translate-x-5 peer-checked:after:bg-white"></label>
                         </div>
-                    </div>
-                    <div class="bg-white/[0.02] border border-white/5 p-6 rounded-2xl space-y-6">
-                         <div class="flex justify-between items-center">
+                        <div class="bg-white/[0.02] border border-white/5 p-6 rounded-2xl flex items-center justify-between">
                             <h4 class="text-[9px] font-black tracking-widest uppercase">Aim_Assist</h4>
                             <input type="checkbox" id="aimassist-toggle" class="sr-only peer">
                             <label for="aimassist-toggle" class="w-10 h-5 bg-white/5 rounded-full relative cursor-pointer peer-checked:bg-white/20 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white/10 after:w-3 after:h-3 after:rounded-full after:transition-all peer-checked:after:translate-x-5 peer-checked:after:bg-white"></label>
@@ -167,6 +136,16 @@
                 <!-- Utility Tab -->
                 <div id="tab-utility" class="tab-content hidden grid grid-cols-2 gap-8">
                     <div class="bg-white/[0.02] border border-white/5 p-6 rounded-2xl flex items-center justify-between">
+                        <h4 class="text-[9px] font-black tracking-widest uppercase">Auto_Totem</h4>
+                        <input type="checkbox" id="autototem-toggle" class="sr-only peer">
+                        <label for="autototem-toggle" class="w-10 h-5 bg-white/5 rounded-full relative cursor-pointer peer-checked:bg-white/20 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white/10 after:w-3 after:h-3 after:rounded-full after:transition-all peer-checked:after:translate-x-5 peer-checked:after:bg-white"></label>
+                    </div>
+                    <div class="bg-white/[0.02] border border-white/5 p-6 rounded-2xl flex items-center justify-between">
+                        <h4 class="text-[9px] font-black tracking-widest uppercase">No_Fall</h4>
+                        <input type="checkbox" id="nofall-toggle" class="sr-only peer">
+                        <label for="nofall-toggle" class="w-10 h-5 bg-white/5 rounded-full relative cursor-pointer peer-checked:bg-white/20 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white/10 after:w-3 after:h-3 after:rounded-full after:transition-all peer-checked:after:translate-x-5 peer-checked:after:bg-white"></label>
+                    </div>
+                    <div class="bg-white/[0.02] border border-white/5 p-6 rounded-2xl flex items-center justify-between">
                         <h4 class="text-[9px] font-black tracking-widest uppercase">Auto_Eat</h4>
                         <input type="checkbox" id="autoeat-toggle" class="sr-only peer">
                         <label for="autoeat-toggle" class="w-10 h-5 bg-white/5 rounded-full relative cursor-pointer peer-checked:bg-white/20 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white/10 after:w-3 after:h-3 after:rounded-full after:transition-all peer-checked:after:translate-x-5 peer-checked:after:bg-white"></label>
@@ -181,6 +160,11 @@
                 <!-- Movement Tab -->
                 <div id="tab-movement" class="tab-content hidden grid grid-cols-2 gap-8">
                     <div class="bg-white/[0.02] border border-white/5 p-6 rounded-2xl flex items-center justify-between">
+                        <h4 class="text-[9px] font-black tracking-widest uppercase">Speed_Hack</h4>
+                        <input type="checkbox" id="speed-toggle" class="sr-only peer">
+                        <label for="speed-toggle" class="w-10 h-5 bg-white/5 rounded-full relative cursor-pointer peer-checked:bg-white/20 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white/10 after:w-3 after:h-3 after:rounded-full after:transition-all peer-checked:after:translate-x-5 peer-checked:after:bg-white"></label>
+                    </div>
+                    <div class="bg-white/[0.02] border border-white/5 p-6 rounded-2xl flex items-center justify-between">
                         <h4 class="text-[9px] font-black tracking-widest uppercase">Auto_Sprint</h4>
                         <input type="checkbox" id="autosprint-toggle" class="sr-only peer">
                         <label for="autosprint-toggle" class="w-10 h-5 bg-white/5 rounded-full relative cursor-pointer peer-checked:bg-white/20 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white/10 after:w-3 after:h-3 after:rounded-full after:transition-all peer-checked:after:translate-x-5 peer-checked:after:bg-white"></label>
@@ -190,11 +174,10 @@
         </div>
     </div>
 
-    <!-- Modals (Add Bot, etc) -->
-    <div id="add-bot-modal" class="hidden fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-6">
-        <!-- Simplified modal for space -->
+    <!-- Deployment Modal -->
+    <div id="add-bot-modal" class="hidden fixed inset-0 z-[100] bg-black/98 flex items-center justify-center p-6">
         <div class="max-w-md w-full border border-white/10 rounded-3xl p-10 bg-black">
-             <h3 class="text-sm font-black tracking-[0.3em] mb-10">UNIT AUTHORIZATION</h3>
+             <h3 class="text-sm font-black tracking-[0.3em] mb-10">UNIT_DEPLOY</h3>
              <form id="add-bot-form" class="space-y-6">
                  <input type="text" id="username" placeholder="USERNAME" class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-[10px] outline-none">
                  <input type="text" id="host" placeholder="HOST" class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-[10px] outline-none">

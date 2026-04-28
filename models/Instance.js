@@ -15,6 +15,7 @@ const instanceSchema = new mongoose.Schema({
         triggerbotEnabled: { type: Boolean, default: false },
         aimassistEnabled: { type: Boolean, default: false },
         aimassistSpeed: { type: Number, default: 0.1 },
+        velocityEnabled: { type: Boolean, default: false }, // Anti-KB
 
         // VISUAL
         espEnabled: { type: Boolean, default: false },
@@ -25,11 +26,14 @@ const instanceSchema = new mongoose.Schema({
         // UTILITY
         autoeatEnabled: { type: Boolean, default: true },
         autoarmorEnabled: { type: Boolean, default: true },
-        antiafkEnabled: { type: Boolean, default: false },
+        autototemEnabled: { type: Boolean, default: true },
+        fastplaceEnabled: { type: Boolean, default: false },
+        nofallEnabled: { type: Boolean, default: false },
 
         // MOVEMENT
         autosprintEnabled: { type: Boolean, default: true },
-        sneakEnabled: { type: Boolean, default: false }
+        sneakEnabled: { type: Boolean, default: false },
+        speedEnabled: { type: Boolean, default: false }
     },
     pm2Id: { type: Number },
     createdAt: { type: Date, default: Date.now }

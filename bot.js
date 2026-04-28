@@ -2,7 +2,6 @@ const mineflayer = require('mineflayer');
 const io = require('socket.io-client');
 const { pathfinder, Movements, goals } = require('mineflayer-pathfinder');
 
-// Get configuration from parent process or environment
 const options = JSON.parse(process.argv[2]);
 const CORE_URL = process.env.CORE_URL;
 
@@ -20,7 +19,6 @@ const bot = mineflayer.createBot({
 
 bot.loadPlugin(pathfinder);
 
-// --- FULL SYSTEM STATE ---
 let state = {
     settings: {
         killauraEnabled: false,
@@ -29,13 +27,17 @@ let state = {
         triggerbotEnabled: false,
         aimassistEnabled: false,
         aimassistSpeed: 0.1,
+        velocityEnabled: false,
         espEnabled: false,
         espPlayers: true,
         espMobs: false,
         autoeatEnabled: true,
         autoarmorEnabled: true,
+        autototemEnabled: true,
+        nofallEnabled: false,
         autosprintEnabled: true,
-        sneakEnabled: false
+        sneakEnabled: false,
+        speedEnabled: false
     },
     lastAttack: 0,
     lastEspEmit: 0
@@ -62,27 +64,40 @@ bot.on('map', (data) => {
     if (data.colors) emitEvent('map', { colors: Array.from(data.colors) });
 });
 
-// --- CORE MODULES ---
+// --- ADVANCED MODULES (MOD 26.1) ---
 
-// 1. Combat Module
+// Velocity (Anti-KB)
+bot.on('packet', (data, metadata) => {
+    if (metadata.name === 'entity_velocity' && state.settings.velocityEnabled) {
+        if (data.entityId === bot.entity.id) {
+            // Cancel knockback by zeroing the packet data if desired,
+            // but mineflayer applies it after the event.
+            // We can just immediately reset velocity on next tick.
+            state.shouldResetVelocity = true;
+        }
+    }
+});
+
 function handleCombat() {
     const now = Date.now();
     const { settings } = state;
 
-    // Aim Assist
+    if (state.shouldResetVelocity && settings.velocityEnabled) {
+        bot.entity.velocity.set(0, bot.entity.velocity.y, 0);
+        state.shouldResetVelocity = false;
+    }
+
     if (settings.aimassistEnabled) {
         const target = bot.nearestEntity((e) => e.type === 'player' && e.username !== bot.username && bot.entity.position.distanceTo(e.position) < 6);
         if (target) {
-            const pos = target.position.offset(0, target.height, 0);
-            bot.lookAt(pos, false); // Smooth look handled by mineflayer internal tick if second arg is false (or use custom smooth rotation)
+            bot.lookAt(target.position.offset(0, target.height, 0), false);
         }
     }
 
-    // Trigger Bot
     if (settings.triggerbotEnabled) {
         const entity = bot.entityAtCursor(4);
         if (entity && (entity.type === 'player' || entity.type === 'mob')) {
-            if (now - state.lastAttack > (1000 / 10)) { // 10 CPS fixed for trigger
+            if (now - state.lastAttack > (1000 / 10)) {
                 bot.attack(entity);
                 bot.swingArm();
                 state.lastAttack = now;
@@ -90,7 +105,6 @@ function handleCombat() {
         }
     }
 
-    // Kill Aura
     if (settings.killauraEnabled) {
         const attackDelay = 1000 / settings.killauraSpeed;
         if (now - state.lastAttack >= attackDelay) {
@@ -101,9 +115,6 @@ function handleCombat() {
             });
 
             if (target && bot.entity.position.distanceTo(target.position) <= settings.killauraRange) {
-                const jitter = Math.random() * 30;
-                if (now - state.lastAttack < attackDelay + jitter) return;
-
                 bot.lookAt(target.position.offset(0, target.height * 0.8, 0));
                 bot.attack(target);
                 bot.swingArm();
@@ -113,14 +124,23 @@ function handleCombat() {
     }
 }
 
-// 2. Utility Module
 function handleUtility() {
     const { settings } = state;
 
-    // Auto Armor
+    // NoFall
+    if (settings.nofallEnabled && bot.entity.velocity.y < -0.6) {
+        bot.entity.onGround = true;
+    }
+
+    // Auto Totem
+    if (settings.autototemEnabled && bot.health < 10 && bot.inventory) {
+        const totem = bot.inventory.items().find(i => i.name === 'totem_of_undying');
+        if (totem && (!bot.inventory.slots[45] || bot.inventory.slots[45].name !== 'totem_of_undying')) {
+            bot.equip(totem, 'off-hand').catch(() => {});
+        }
+    }
+
     if (settings.autoarmorEnabled && bot.inventory) {
-        const armorSlots = [8, 7, 6, 5]; // feet, legs, chest, head
-        // Simplified auto-armor logic
         const items = bot.inventory.items();
         items.forEach(item => {
             if (item.name.includes('helmet') && !bot.inventory.slots[5]) bot.equip(item, 'head');
@@ -130,28 +150,25 @@ function handleUtility() {
         });
     }
 
-    // Auto Eat
     if (settings.autoeatEnabled && bot.food < 18) {
         const food = bot.inventory.items().find(item => item.name.includes('cooked') || item.name === 'apple' || item.name === 'bread');
         if (food) bot.eat(food).catch(() => {});
     }
 
-    // Movement
     bot.setControlState('sprint', settings.autosprintEnabled);
     bot.setControlState('sneak', settings.sneakEnabled);
+
+    if (settings.speedEnabled) {
+        bot.setControlState('forward', true);
+        bot.setControlState('sprint', true);
+    }
 }
 
-// 3. Visuals Module (ESP Relay)
 function handleVisuals() {
     const now = Date.now();
     if (state.settings.espEnabled && now - state.lastEspEmit > 500) {
         const entities = Object.values(bot.entities)
-            .filter(e => {
-                if (e.id === bot.entity.id) return false;
-                if (e.type === 'player' && state.settings.espPlayers) return true;
-                if (e.type === 'mob' && state.settings.espMobs) return true;
-                return false;
-            })
+            .filter(e => e.id !== bot.entity.id && ((e.type === 'player' && state.settings.espPlayers) || (e.type === 'mob' && state.settings.espMobs)))
             .map(e => ({
                 id: e.id,
                 type: e.type,
@@ -171,11 +188,10 @@ bot.on('physicsTick', () => {
     handleVisuals();
 });
 
-// --- COMMAND HANDLING ---
 process.on('message', (msg) => {
     if (msg.type === 'send-chat' && bot) bot.chat(msg.message);
     if (msg.type === 'update-settings') {
         state.settings = { ...state.settings, ...msg.settings };
-        console.log(`[${bot.username}] MODULES_RECONFIGURED`);
+        console.log(`[${bot.username}] MOD_26.1_APPLIED`);
     }
 });
