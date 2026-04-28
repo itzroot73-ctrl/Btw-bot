@@ -15,10 +15,11 @@ const instanceSchema = new mongoose.Schema({
         triggerbotEnabled: { type: Boolean, default: false },
         aimassistEnabled: { type: Boolean, default: false },
         aimassistSpeed: { type: Number, default: 0.1 },
-        velocityEnabled: { type: Boolean, default: false }, // Anti-KB
+        velocityEnabled: { type: Boolean, default: false },
 
         // VISUAL
         espEnabled: { type: Boolean, default: false },
+        targetEspEnabled: { type: Boolean, default: true },
         espPlayers: { type: Boolean, default: true },
         espMobs: { type: Boolean, default: false },
         tracersEnabled: { type: Boolean, default: false },

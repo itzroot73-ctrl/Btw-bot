@@ -63,6 +63,7 @@ function syncHubUI() {
     document.getElementById('triggerbot-toggle').checked = s.triggerbotEnabled;
     document.getElementById('aimassist-toggle').checked = s.aimassistEnabled;
     document.getElementById('esp-toggle').checked = s.espEnabled;
+    document.getElementById('target-esp-toggle').checked = s.targetEspEnabled;
     document.getElementById('autototem-toggle').checked = s.autototemEnabled;
     document.getElementById('nofall-toggle').checked = s.nofallEnabled;
     document.getElementById('autoeat-toggle').checked = s.autoeatEnabled;
@@ -75,7 +76,6 @@ function updateBotSettings(settings) {
     socket.emit('update-bot-settings', { botId: selectedBotId, settings });
 }
 
-// Input listeners
 const setupListener = (id, key, isFloat = false) => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -88,6 +88,7 @@ setupListener('velocity-toggle', 'velocityEnabled');
 setupListener('triggerbot-toggle', 'triggerbotEnabled');
 setupListener('aimassist-toggle', 'aimassistEnabled');
 setupListener('esp-toggle', 'espEnabled');
+setupListener('target-esp-toggle', 'targetEspEnabled');
 setupListener('autototem-toggle', 'autototemEnabled');
 setupListener('nofall-toggle', 'nofallEnabled');
 setupListener('autoeat-toggle', 'autoeatEnabled');
@@ -138,10 +139,25 @@ function renderESP(entities) {
     const header = espList.querySelector('h3');
     espList.innerHTML = '';
     espList.appendChild(header);
+
+    // Sort to show target first
+    entities.sort((a, b) => (b.isTarget ? 1 : 0) - (a.isTarget ? 1 : 0));
+
     entities.forEach(e => {
         const div = document.createElement('div');
-        div.className = 'bg-white/[0.02] border border-white/5 p-3 rounded-xl flex justify-between items-center';
-        div.innerHTML = `<div><p class="text-[9px] font-black text-white/80 uppercase">${e.name || e.type}</p></div>`;
+        div.className = `p-3 rounded-xl flex justify-between items-center transition-all ${e.isTarget ? 'bg-white/10 border border-white/20 target-pulse' : 'bg-white/[0.02] border border-white/5'}`;
+
+        let targetBadge = e.isTarget ? `<span class="ml-2 text-[6px] bg-white text-black px-1 rounded-sm font-black float-anim">TARGET_ACQUIRED</span>` : '';
+
+        div.innerHTML = `
+            <div class="flex items-center">
+                <div class="w-1 h-1 rounded-full ${e.isTarget ? 'bg-white' : 'bg-white/20'} mr-3"></div>
+                <div>
+                    <p class="text-[9px] font-black ${e.isTarget ? 'text-white' : 'text-white/80'} uppercase">${e.name || e.type} ${targetBadge}</p>
+                    <p class="text-[6px] text-white/20 font-black tracking-widest mt-1 uppercase">${e.type} // ${e.dist.toFixed(1)}M</p>
+                </div>
+            </div>
+        `;
         espList.appendChild(div);
     });
 }

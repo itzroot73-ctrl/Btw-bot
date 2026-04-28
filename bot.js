@@ -29,6 +29,7 @@ let state = {
         aimassistSpeed: 0.1,
         velocityEnabled: false,
         espEnabled: false,
+        targetEspEnabled: true,
         espPlayers: true,
         espMobs: false,
         autoeatEnabled: true,
@@ -40,7 +41,8 @@ let state = {
         speedEnabled: false
     },
     lastAttack: 0,
-    lastEspEmit: 0
+    lastEspEmit: 0,
+    currentTargetId: null
 };
 
 function emitEvent(type, data) {
@@ -64,17 +66,9 @@ bot.on('map', (data) => {
     if (data.colors) emitEvent('map', { colors: Array.from(data.colors) });
 });
 
-// --- ADVANCED MODULES (MOD 26.1) ---
-
-// Velocity (Anti-KB)
 bot.on('packet', (data, metadata) => {
     if (metadata.name === 'entity_velocity' && state.settings.velocityEnabled) {
-        if (data.entityId === bot.entity.id) {
-            // Cancel knockback by zeroing the packet data if desired,
-            // but mineflayer applies it after the event.
-            // We can just immediately reset velocity on next tick.
-            state.shouldResetVelocity = true;
-        }
+        if (data.entityId === bot.entity.id) state.shouldResetVelocity = true;
     }
 });
 
@@ -87,36 +81,42 @@ function handleCombat() {
         state.shouldResetVelocity = false;
     }
 
-    if (settings.aimassistEnabled) {
-        const target = bot.nearestEntity((e) => e.type === 'player' && e.username !== bot.username && bot.entity.position.distanceTo(e.position) < 6);
-        if (target) {
-            bot.lookAt(target.position.offset(0, target.height, 0), false);
+    // Target Selection
+    let target = null;
+    if (settings.killauraEnabled) {
+        target = bot.nearestEntity((e) => {
+            if (e.type === 'player' && e.username !== bot.username) return true;
+            if (e.type === 'mob' || e.type === 'hostile') return true;
+            return false;
+        });
+
+        if (target && bot.entity.position.distanceTo(target.position) > settings.killauraRange) {
+            target = null;
         }
+    }
+
+    state.currentTargetId = target ? target.id : null;
+
+    if (target && settings.killauraEnabled) {
+        const attackDelay = 1000 / settings.killauraSpeed;
+        if (now - state.lastAttack >= attackDelay) {
+            bot.lookAt(target.position.offset(0, target.height * 0.8, 0));
+            bot.attack(target);
+            bot.swingArm();
+            state.lastAttack = now;
+        }
+    }
+
+    if (!target && settings.aimassistEnabled) {
+        const assistTarget = bot.nearestEntity((e) => e.type === 'player' && e.username !== bot.username && bot.entity.position.distanceTo(e.position) < 6);
+        if (assistTarget) bot.lookAt(assistTarget.position.offset(0, assistTarget.height, 0), false);
     }
 
     if (settings.triggerbotEnabled) {
-        const entity = bot.entityAtCursor(4);
-        if (entity && (entity.type === 'player' || entity.type === 'mob')) {
-            if (now - state.lastAttack > (1000 / 10)) {
-                bot.attack(entity);
-                bot.swingArm();
-                state.lastAttack = now;
-            }
-        }
-    }
-
-    if (settings.killauraEnabled) {
-        const attackDelay = 1000 / settings.killauraSpeed;
-        if (now - state.lastAttack >= attackDelay) {
-            const target = bot.nearestEntity((e) => {
-                if (e.type === 'player' && e.username !== bot.username) return true;
-                if (e.type === 'mob' || e.type === 'hostile') return true;
-                return false;
-            });
-
-            if (target && bot.entity.position.distanceTo(target.position) <= settings.killauraRange) {
-                bot.lookAt(target.position.offset(0, target.height * 0.8, 0));
-                bot.attack(target);
+        const cursorEntity = bot.entityAtCursor(4);
+        if (cursorEntity && (cursorEntity.type === 'player' || cursorEntity.type === 'mob')) {
+            if (now - state.lastAttack > 100) {
+                bot.attack(cursorEntity);
                 bot.swingArm();
                 state.lastAttack = now;
             }
@@ -126,20 +126,11 @@ function handleCombat() {
 
 function handleUtility() {
     const { settings } = state;
-
-    // NoFall
-    if (settings.nofallEnabled && bot.entity.velocity.y < -0.6) {
-        bot.entity.onGround = true;
-    }
-
-    // Auto Totem
+    if (settings.nofallEnabled && bot.entity.velocity.y < -0.6) bot.entity.onGround = true;
     if (settings.autototemEnabled && bot.health < 10 && bot.inventory) {
         const totem = bot.inventory.items().find(i => i.name === 'totem_of_undying');
-        if (totem && (!bot.inventory.slots[45] || bot.inventory.slots[45].name !== 'totem_of_undying')) {
-            bot.equip(totem, 'off-hand').catch(() => {});
-        }
+        if (totem && (!bot.inventory.slots[45] || bot.inventory.slots[45].name !== 'totem_of_undying')) bot.equip(totem, 'off-hand').catch(() => {});
     }
-
     if (settings.autoarmorEnabled && bot.inventory) {
         const items = bot.inventory.items();
         items.forEach(item => {
@@ -149,32 +140,32 @@ function handleUtility() {
             if (item.name.includes('boots') && !bot.inventory.slots[8]) bot.equip(item, 'feet');
         });
     }
-
     if (settings.autoeatEnabled && bot.food < 18) {
         const food = bot.inventory.items().find(item => item.name.includes('cooked') || item.name === 'apple' || item.name === 'bread');
         if (food) bot.eat(food).catch(() => {});
     }
-
     bot.setControlState('sprint', settings.autosprintEnabled);
     bot.setControlState('sneak', settings.sneakEnabled);
-
-    if (settings.speedEnabled) {
-        bot.setControlState('forward', true);
-        bot.setControlState('sprint', true);
-    }
+    if (settings.speedEnabled) { bot.setControlState('forward', true); bot.setControlState('sprint', true); }
 }
 
 function handleVisuals() {
     const now = Date.now();
-    if (state.settings.espEnabled && now - state.lastEspEmit > 500) {
+    if ((state.settings.espEnabled || state.settings.targetEspEnabled) && now - state.lastEspEmit > 500) {
         const entities = Object.values(bot.entities)
-            .filter(e => e.id !== bot.entity.id && ((e.type === 'player' && state.settings.espPlayers) || (e.type === 'mob' && state.settings.espMobs)))
+            .filter(e => e.id !== bot.entity.id)
+            .filter(e => {
+                if (e.id === state.currentTargetId) return true; // Always include target
+                if (!state.settings.espEnabled) return false;
+                return (e.type === 'player' && state.settings.espPlayers) || (e.type === 'mob' && state.settings.espMobs);
+            })
             .map(e => ({
                 id: e.id,
                 type: e.type,
                 name: e.username || e.name,
                 pos: e.position,
-                dist: bot.entity.position.distanceTo(e.position)
+                dist: bot.entity.position.distanceTo(e.position),
+                isTarget: e.id === state.currentTargetId
             }));
 
         emitEvent('esp-data', { entities });
@@ -192,6 +183,6 @@ process.on('message', (msg) => {
     if (msg.type === 'send-chat' && bot) bot.chat(msg.message);
     if (msg.type === 'update-settings') {
         state.settings = { ...state.settings, ...msg.settings };
-        console.log(`[${bot.username}] MOD_26.1_APPLIED`);
+        console.log(`[${bot.username}] MODULES_RECONFIGURED`);
     }
 });
