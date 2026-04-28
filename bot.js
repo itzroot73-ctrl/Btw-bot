@@ -1,64 +1,75 @@
 const mineflayer = require('mineflayer');
 const io = require('socket.io-client');
 
-// Get configuration from parent process or environment
-const options = JSON.parse(process.argv[2]);
-const CORE_URL = process.env.CORE_URL; // Used if running in distributed mode
+// CLI Arguments: username host port apiServer instanceId
+const username = process.argv[2];
+const host = process.argv[3];
+const port = parseInt(process.argv[4]);
+const apiServer = process.argv[5];
+const instanceId = process.argv[6];
 
-let socket;
-if (CORE_URL) {
-    socket = io(CORE_URL);
-}
+console.log(`[BOT] Initializing: ${username} @ ${host}:${port}`);
+
+const socket = io(apiServer);
 
 const bot = mineflayer.createBot({
-    host: options.host || 'play.bananasmp.net',
-    port: options.port || 25565,
-    username: options.username,
+    host: host,
+    port: port,
+    username: username,
+    version: false // Auto-detect version
 });
 
 function emitEvent(type, data) {
-    if (process.send) {
-        // Parent process (node-listener or local server)
-        process.send({ type, ...data });
-    }
-    if (socket) {
-        // Remote Core Controller
-        socket.emit(`relay-${type}`, { botId: options.instanceId, ...data });
-    }
+    socket.emit('bot-event', {
+        instanceId: instanceId,
+        type: type,
+        data: data
+    });
 }
 
 bot.on('login', () => {
-    emitEvent('status', { status: 'online', username: bot.username });
+    console.log(`[BOT] ${username} Logged in`);
+    emitEvent('status', 'online');
 });
 
-bot.on('chat', (username, message) => {
-    const msg = {
-        username,
-        message,
-        time: new Date().toLocaleTimeString()
-    };
-    emitEvent('chat', { msg });
+bot.on('chat', (sender, message) => {
+    emitEvent('chat', {
+        username: sender,
+        message: message,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    });
 });
 
-bot.on('error', (err) => {
-    emitEvent('status', { status: 'error', error: err.message });
-});
-
-bot.on('end', () => {
-    emitEvent('status', { status: 'offline' });
-});
-
-// Capture Map Data
-bot.on('map', (data) => {
-    // Send only the essential color data buffer as an array
+bot.on('map_data', (data) => {
+    // Only send the color data if it exists
     if (data.colors) {
-        emitEvent('map', { colors: Array.from(data.colors) });
+        emitEvent('map', Array.from(data.colors));
     }
 });
 
-// Listen for messages from parent (e.g., to send chat)
-process.on('message', (msg) => {
-    if (msg.type === 'send-chat' && bot) {
-        bot.chat(msg.message);
+bot.on('error', (err) => {
+    console.error(`[BOT] ${username} Error: `, err);
+    emitEvent('status', 'error');
+});
+
+bot.on('kicked', (reason) => {
+    console.warn(`[BOT] ${username} Kicked: `, reason);
+    emitEvent('status', 'offline');
+});
+
+bot.on('end', () => {
+    console.log(`[BOT] ${username} Connection closed`);
+    emitEvent('status', 'offline');
+});
+
+socket.on('send-chat', (payload) => {
+    if (payload.botId === instanceId) {
+        bot.chat(payload.message);
+    }
+});
+
+socket.on('request-map', (payload) => {
+    if (payload.botId === instanceId) {
+        // Map is sent automatically on update by mineflayer
     }
 });
